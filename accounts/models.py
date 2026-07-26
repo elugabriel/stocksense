@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from simple_history.models import HistoricalRecords
 
 
 class User(AbstractUser):
@@ -21,8 +22,6 @@ class User(AbstractUser):
         default=Role.SALES_STAFF,
     )
 
-    # Scope fields — these implement the "Scope" column from your role table.
-    # Nullable because scope differs by role (e.g. Super Admin has none, Branch Manager has branch only).
     branch = models.ForeignKey(
         "core.Branch",
         on_delete=models.SET_NULL,
@@ -37,6 +36,8 @@ class User(AbstractUser):
         blank=True,
         related_name="staff",
     )
+
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"

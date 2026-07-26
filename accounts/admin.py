@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from simple_history.admin import SimpleHistoryAdmin
+
 from .models import User
 
 
-class CustomUserAdmin(UserAdmin):
+class CustomUserAdmin(SimpleHistoryAdmin, UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ("Role & Scope", {"fields": ("role", "branch", "warehouse")}),
     )
