@@ -6,10 +6,112 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Product
-from .serializers import ProductSerializer
-from accounts.permissions import IsScopedToLocation
 
+from accounts.permissions import IsScopedToLocation
+from django.db.models import Sum
+from rest_framework.views import APIView
+
+
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+
+from .models import Batch, StockMovement, Product, Warehouse, StockTransfer
+from .serializers import (
+    ProductSerializer, AddStockSerializer, ReceiveStockFromVendorSerializer,
+    ReturnStockSerializer, TransferStockSerializer, RemoveDamagedExpiredSerializer,
+    PhysicalCountSerializer,
+)
+
+class TransferStockView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = TransferStockSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        product = get_object_or_404(Product, id=data["product_id"])
+        source_batch = get_object_or_404(Batch, id=data["batch_id"])
+        source_warehouse = get_object_or_404(Warehouse, id=data["source_warehouse_id"])
+        destination_warehouse = get_object_or_404(Warehouse, id=data["destination_warehouse_id"])
+        quantity = data["quantity"]
+
+        if source_warehouse == destination_warehouse:
+            return Response(
+                {"detail": "Source and destination warehouses must be different"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if source_batch.quantity < quantity:
+            return Response(
+                {"detail": f"Insufficient stock in source batch. Available: {source_batch.quantity}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            # Reduce stock at source
+            source_batch.quantity -= quantity
+            source_batch.save()
+
+            # Add stock at destination — same lot number, new or existing batch there
+            dest_batch, created = Batch.objects.get_or_create(
+                product=product,
+                warehouse=destination_warehouse,
+                lot_number=source_batch.lot_number,
+                defaults={
+                    "quantity": quantity,
+                    "manufacture_date": source_batch.manufacture_date,
+                    "expiry_date": source_batch.expiry_date,
+                },
+            )
+            if not created:
+                dest_batch.quantity += quantity
+                dest_batch.save()
+
+            # Create the formal transfer record
+            transfer = StockTransfer.objects.create(
+                product=product,
+                batch=source_batch,
+                source_warehouse=source_warehouse,
+                destination_warehouse=destination_warehouse,
+                quantity=quantity,
+                status=StockTransfer.Status.COMPLETED,
+                initiated_by=request.user,
+                notes=data.get("notes", ""),
+            )
+
+            # Log both sides of the movement ledger
+            StockMovement.objects.create(
+                product=product,
+                warehouse=source_warehouse,
+                batch=source_batch,
+                movement_type=StockMovement.MovementType.TRANSFER_OUT,
+                quantity=-quantity,
+                reference_id=str(transfer.id),
+                performed_by=request.user,
+                notes=f"Transfer to {destination_warehouse.name}",
+            )
+            StockMovement.objects.create(
+                product=product,
+                warehouse=destination_warehouse,
+                batch=dest_batch,
+                movement_type=StockMovement.MovementType.TRANSFER_IN,
+                quantity=quantity,
+                reference_id=str(transfer.id),
+                performed_by=request.user,
+                notes=f"Transfer from {source_warehouse.name}",
+            )
+
+        return Response(
+            {
+                "message": "Transfer completed successfully",
+                "transfer_id": transfer.id,
+                "source_batch_new_quantity": source_batch.quantity,
+                "destination_batch_id": dest_batch.id,
+                "destination_batch_new_quantity": dest_batch.quantity,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
@@ -34,10 +136,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(product)
         return Response(serializer.data)
 
-from django.db.models import Sum
-from rest_framework.views import APIView
 
-from .models import Batch
 
 
 class StockDashboardView(APIView):
@@ -70,3 +169,280 @@ class StockDashboardView(APIView):
             "by_category": list(by_category),
             "by_warehouse": list(by_warehouse),
         })
+
+class AddStockView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = AddStockSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        product = get_object_or_404(Product, id=data["product_id"])
+        warehouse = get_object_or_404(Warehouse, id=data["warehouse_id"])
+
+        with transaction.atomic():
+            batch, created = Batch.objects.get_or_create(
+                product=product,
+                warehouse=warehouse,
+                lot_number=data["lot_number"],
+                defaults={
+                    "quantity": data["quantity"],
+                    "manufacture_date": data.get("manufacture_date"),
+                    "expiry_date": data.get("expiry_date"),
+                },
+            )
+            if not created:
+                batch.quantity += data["quantity"]
+                batch.save()
+
+            StockMovement.objects.create(
+                product=product,
+                warehouse=warehouse,
+                batch=batch,
+                movement_type=StockMovement.MovementType.RECEIVED,
+                quantity=data["quantity"],
+                performed_by=request.user,
+                notes="Stock added via Add Stock endpoint",
+            )
+
+        return Response(
+            {
+                "message": "Stock added successfully",
+                "batch_id": batch.id,
+                "new_quantity": batch.quantity,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+        
+class ReceiveStockFromVendorView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ReceiveStockFromVendorSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        product = get_object_or_404(Product, id=data["product_id"])
+        warehouse = get_object_or_404(Warehouse, id=data["warehouse_id"])
+
+        with transaction.atomic():
+            batch, created = Batch.objects.get_or_create(
+                product=product,
+                warehouse=warehouse,
+                lot_number=data["lot_number"],
+                defaults={
+                    "quantity": data["quantity"],
+                    "manufacture_date": data.get("manufacture_date"),
+                    "expiry_date": data.get("expiry_date"),
+                },
+            )
+            if not created:
+                batch.quantity += data["quantity"]
+                batch.save()
+
+            vendor_ref = data.get("vendor_reference", "")
+            StockMovement.objects.create(
+                product=product,
+                warehouse=warehouse,
+                batch=batch,
+                movement_type=StockMovement.MovementType.RECEIVED,
+                quantity=data["quantity"],
+                reference_id=vendor_ref,
+                performed_by=request.user,
+                notes=f"Received from vendor. Reference: {vendor_ref or 'N/A'}",
+            )
+
+        return Response(
+            {
+                "message": "Stock received from vendor successfully",
+                "batch_id": batch.id,
+                "new_quantity": batch.quantity,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+        
+class ReturnStockView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ReturnStockSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        product = get_object_or_404(Product, id=data["product_id"])
+        warehouse = get_object_or_404(Warehouse, id=data["warehouse_id"])
+        batch = None
+        if data.get("batch_id"):
+            batch = get_object_or_404(Batch, id=data["batch_id"])
+
+        direction = data["direction"]
+        quantity = data["quantity"]
+
+        with transaction.atomic():
+            if direction == "to_vendor":
+                # Stock leaves — decreasing an existing batch
+                if batch:
+                    batch.quantity = max(0, batch.quantity - quantity)
+                    batch.save()
+                movement_quantity = -quantity
+                movement_type = StockMovement.MovementType.RETURN
+                note = f"Returned to vendor. Reason: {data['reason']}"
+
+            else:  # from_customer
+                if data["is_resellable"] and batch:
+                    batch.quantity += quantity
+                    batch.save()
+                    movement_quantity = quantity
+                    note = f"Customer return (resellable). Reason: {data['reason']}"
+                else:
+                    # Not resellable — log it, but don't add back to sellable stock
+                    movement_quantity = 0
+                    note = f"Customer return (NOT resellable, held for disposal). Reason: {data['reason']}"
+                movement_type = StockMovement.MovementType.RETURN
+
+            StockMovement.objects.create(
+                product=product,
+                warehouse=warehouse,
+                batch=batch,
+                movement_type=movement_type,
+                quantity=movement_quantity,
+                performed_by=request.user,
+                notes=note,
+            )
+
+        return Response(
+            {
+                "message": "Return processed successfully",
+                "direction": direction,
+                "quantity": quantity,
+                "batch_id": batch.id if batch else None,
+                "new_quantity": batch.quantity if batch else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+        
+        
+        
+from .models import StockAdjustment
+
+
+class RemoveDamagedExpiredView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = RemoveDamagedExpiredSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        product = get_object_or_404(Product, id=data["product_id"])
+        warehouse = get_object_or_404(Warehouse, id=data["warehouse_id"])
+        batch = get_object_or_404(Batch, id=data["batch_id"])
+        quantity = data["quantity"]
+
+        if batch.quantity < quantity:
+            return Response(
+                {"detail": f"Cannot remove more than available. Batch has {batch.quantity} units."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            batch.quantity -= quantity
+            batch.save()
+
+            adjustment = StockAdjustment.objects.create(
+                product=product,
+                warehouse=warehouse,
+                batch=batch,
+                quantity_change=-quantity,
+                reason_code=data["reason_code"],
+                reason_notes=data["reason_notes"],
+                requested_by=request.user,
+                is_approved=True,
+                approved_by=request.user,
+            )
+
+            StockMovement.objects.create(
+                product=product,
+                warehouse=warehouse,
+                batch=batch,
+                movement_type=StockMovement.MovementType.DAMAGE,
+                quantity=-quantity,
+                reference_id=str(adjustment.id),
+                performed_by=request.user,
+                notes=f"{data['reason_code']}: {data['reason_notes']}",
+            )
+
+        return Response(
+            {
+                "message": "Damaged/expired stock removed successfully",
+                "adjustment_id": adjustment.id,
+                "batch_new_quantity": batch.quantity,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+        
+class PhysicalCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PhysicalCountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        product = get_object_or_404(Product, id=data["product_id"])
+        warehouse = get_object_or_404(Warehouse, id=data["warehouse_id"])
+        batch = get_object_or_404(Batch, id=data["batch_id"])
+        counted_quantity = data["counted_quantity"]
+
+        system_quantity = batch.quantity
+        difference = counted_quantity - system_quantity
+
+        if difference == 0:
+            return Response(
+                {
+                    "message": "Physical count matches system quantity — no adjustment needed",
+                    "batch_id": batch.id,
+                    "quantity": system_quantity,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        with transaction.atomic():
+            batch.quantity = counted_quantity
+            batch.save()
+
+            adjustment = StockAdjustment.objects.create(
+                product=product,
+                warehouse=warehouse,
+                batch=batch,
+                quantity_change=difference,
+                reason_code=StockAdjustment.ReasonCode.COUNT_CORRECTION,
+                reason_notes=data.get("notes", "") or f"Physical count correction: system showed {system_quantity}, counted {counted_quantity}",
+                requested_by=request.user,
+                is_approved=True,
+                approved_by=request.user,
+            )
+
+            StockMovement.objects.create(
+                product=product,
+                warehouse=warehouse,
+                batch=batch,
+                movement_type=StockMovement.MovementType.ADJUSTMENT,
+                quantity=difference,
+                reference_id=str(adjustment.id),
+                performed_by=request.user,
+                notes=f"Physical count correction: {system_quantity} → {counted_quantity}",
+            )
+
+        return Response(
+            {
+                "message": "Physical count reconciled successfully",
+                "adjustment_id": adjustment.id,
+                "system_quantity_before": system_quantity,
+                "counted_quantity": counted_quantity,
+                "difference": difference,
+                "batch_new_quantity": batch.quantity,
+            },
+            status=status.HTTP_201_CREATED,
+        )
