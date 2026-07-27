@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StockSense — Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <nav class="navbar">
+        <h2>StockSense</h2>
+        <button id="logout-btn">Log Out</button>
+    </nav>
+
+    <main class="dashboard">
+        <h1>Stock Overview</h1>
+
+        <section>
+            <h3>By Product</h3>
+            <table id="by-product-table">
+                <thead>
+                    <tr><th>SKU</th><th>Product</th><th>Total Quantity</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section>
+            <h3>By Warehouse</h3>
+            <table id="by-warehouse-table">
+                <thead>
+                    <tr><th>Warehouse</th><th>Branch</th><th>Total Quantity</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
