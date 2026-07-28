@@ -33,7 +33,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
     }
     
     document.getElementById("add-product-btn").addEventListener("click", () => {
-        alert("Add Product form coming next");
+        window.location.href = "product-form.html";
     });
     
     loadProducts();
