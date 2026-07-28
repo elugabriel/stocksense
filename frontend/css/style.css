@@ -5,11 +5,14 @@
     
     body {
         background: #f4f4f4;
+        margin: 0;
+    }
+    
+    body.login-page {
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100vh;
-        margin: 0;
     }
     
     .login-container {
