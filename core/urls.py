@@ -5,10 +5,15 @@ from .views import (
     ProductViewSet, StockDashboardView, AddStockView,
     ReceiveStockFromVendorView, ReturnStockView, TransferStockView,
     RemoveDamagedExpiredView, PhysicalCountView,
+    WarehouseViewSet, CategoryViewSet,
+    StockMovementViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"products", ProductViewSet, basename="product")
+router.register(r"warehouses", WarehouseViewSet, basename="warehouse")
+router.register(r"categories", CategoryViewSet, basename="category")
+router.register(r"movements", StockMovementViewSet, basename="movement")
 
 
 

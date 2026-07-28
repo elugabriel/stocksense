@@ -48,3 +48,16 @@ async function refreshAccessToken() {
     }
     return false;
 }
+
+function formatApiError(errorData) {
+    if (typeof errorData === "string") return errorData;
+    if (errorData.detail) return errorData.detail;
+
+    const lines = [];
+    for (const [field, messages] of Object.entries(errorData)) {
+        const fieldLabel = field.replace(/_/g, " ");
+        const messageText = Array.isArray(messages) ? messages.join(" ") : messages;
+        lines.push(`${fieldLabel}: ${messageText}`);
+    }
+    return lines.join(" | ");
+}

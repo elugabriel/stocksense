@@ -27,8 +27,30 @@ document.getElementById("logout-btn").addEventListener("click", () => {
                 <td>${product.selling_price}</td>
                 <td>${product.reorder_level}</td>
                 <td>${product.is_active ? "Yes" : "No"}</td>
+                <td>
+                    <button class="edit-btn" data-id="${product.id}">Edit</button>
+                    <button class="delete-btn" data-id="${product.id}">Delete</button>
+                </td>
             `;
             tbody.appendChild(tr);
+        });
+        
+        document.querySelectorAll(".edit-btn").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                window.location.href = `product-form.html?id=${btn.dataset.id}`;
+            });
+        });
+        
+        document.querySelectorAll(".delete-btn").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                if (!confirm("Delete this product? This cannot be undone.")) return;
+                const response = await apiFetch(`/products/${btn.dataset.id}/`, { method: "DELETE" });
+                if (response && response.ok) {
+                    loadProducts();
+                } else {
+                    alert("Failed to delete product");
+                }
+            });
         });
     }
     

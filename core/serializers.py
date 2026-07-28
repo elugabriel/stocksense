@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Product
 from .models import Batch, StockMovement, StockAdjustment, StockTransfer
+from .models import Warehouse, Category
 
 
 class AddStockSerializer(serializers.Serializer):
@@ -67,3 +68,33 @@ class PhysicalCountSerializer(serializers.Serializer):
     batch_id = serializers.IntegerField()
     counted_quantity = serializers.IntegerField(min_value=0)
     notes = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    
+
+
+class WarehouseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Warehouse
+        fields = ["id", "name", "branch", "warehouse_type", "address", "city", "capacity_units", "manager", "is_active"]
+        read_only_fields = ["id"]
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name", "parent", "description", "is_active"]
+        read_only_fields = ["id"]
+        
+class StockMovementSerializer(serializers.ModelSerializer):
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+    warehouse_name = serializers.CharField(source="warehouse.name", read_only=True)
+    performed_by_username = serializers.CharField(source="performed_by.username", read_only=True)
+
+    class Meta:
+        model = StockMovement
+        fields = [
+            "id", "product", "product_sku", "product_name",
+            "warehouse", "warehouse_name", "batch",
+            "movement_type", "quantity", "reference_id",
+            "performed_by", "performed_by_username", "notes", "timestamp",
+        ]

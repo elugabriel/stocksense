@@ -2,10 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>StockSense — Products</title>
+    <title>StockSense — Movement History</title>
     <link rel="stylesheet" href="css/style.css?v=2">
     <link rel="stylesheet" href="css/dashboard.css?v=3">
-
 </head>
 <body>
     <nav class="navbar">
@@ -21,22 +20,18 @@
     </nav>
 
     <main class="dashboard">
-        <div class="page-header">
-            <h1>Products</h1>
-            <button id="add-product-btn">+ Add Product</button>
-        </div>
+        <h1>Movement History</h1>
 
-        <table id="products-table">
+        <table id="movements-table">
             <thead>
                 <tr>
+                    <th>Time</th>
                     <th>SKU</th>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Cost Price</th>
-                    <th>Selling Price</th>
-                    <th>Reorder Level</th>
-                    <th>Active</th>
-                    <th>Actions</th>
+                    <th>Warehouse</th>
+                    <th>Type</th>
+                    <th>Qty</th>
+                    <th>By</th>
+                    <th>Notes</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -44,6 +39,6 @@
     </main>
 
     <script src="js/api.js"></script>
-    <script src="js/products.js"></script>
+    <script src="js/movements.js"></script>
 </body>
 </html>

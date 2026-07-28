@@ -15,11 +15,12 @@ from rest_framework.views import APIView
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
-from .models import Batch, StockMovement, Product, Warehouse, StockTransfer
+from .models import Batch, StockMovement, Product, Warehouse, StockTransfer, Category
 from .serializers import (
     ProductSerializer, AddStockSerializer, ReceiveStockFromVendorSerializer,
     ReturnStockSerializer, TransferStockSerializer, RemoveDamagedExpiredSerializer,
-    PhysicalCountSerializer,
+    PhysicalCountSerializer, WarehouseSerializer, CategorySerializer,
+    StockMovementSerializer,
 )
 
 class TransferStockView(APIView):
@@ -446,3 +447,19 @@ class PhysicalCountView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+        
+class WarehouseViewSet(viewsets.ModelViewSet):
+    queryset = Warehouse.objects.all()
+    serializer_class = WarehouseSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
+class StockMovementViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = StockMovement.objects.all().order_by("-timestamp")
+    serializer_class = StockMovementSerializer
+    permission_classes = [IsAuthenticated]

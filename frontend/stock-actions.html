@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StockSense — Stock Actions</title>
+    <link rel="stylesheet" href="css/style.css?v=2">
+    <link rel="stylesheet" href="css/dashboard.css?v=2">
+</head>
+<body>
+    <nav class="navbar">
+        <h2>StockSense</h2>
+        <div>
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="products.html" class="nav-link">Products</a>
+            <a href="stock-actions.html" class="nav-link">Stock Actions</a>
+            <a href="locations.html" class="nav-link">Warehouses & Categories</a>
+            <a href="movements.html" class="nav-link">Movement History</a>
+            <button id="logout-btn">Log Out</button>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <h1>Stock Actions</h1>
+
+        <section class="form-section">
+            <label for="action-type">Action</label>
+            <select id="action-type">
+                <option value="add">Add New Stock</option>
+                <option value="receive">Receive from Vendor</option>
+                <option value="return">Return (Vendor/Customer)</option>
+                <option value="transfer">Transfer Between Locations</option>
+                <option value="damage">Remove Damaged/Expired</option>
+                <option value="count">Physical Count Correction</option>
+            </select>
+
+            <form id="stock-form">
+                <div class="field-group" data-field="product_id">
+                    <label>Product ID</label>
+                    <input type="number" id="product_id" required>
+                </div>
+
+                <div class="field-group" data-field="warehouse_id">
+                    <label>Warehouse ID</label>
+                    <input type="number" id="warehouse_id">
+                </div>
+
+                <div class="field-group" data-field="source_warehouse_id">
+                    <label>Source Warehouse ID</label>
+                    <input type="number" id="source_warehouse_id">
+                </div>
+
+                <div class="field-group" data-field="destination_warehouse_id">
+                    <label>Destination Warehouse ID</label>
+                    <input type="number" id="destination_warehouse_id">
+                </div>
+
+                <div class="field-group" data-field="batch_id">
+                    <label>Batch ID</label>
+                    <input type="number" id="batch_id">
+                </div>
+
+                <div class="field-group" data-field="lot_number">
+                    <label>Lot Number</label>
+                    <input type="text" id="lot_number">
+                </div>
+
+                <div class="field-group" data-field="quantity">
+                    <label>Quantity</label>
+                    <input type="number" id="quantity" min="1">
+                </div>
+
+                <div class="field-group" data-field="counted_quantity">
+                    <label>Counted Quantity</label>
+                    <input type="number" id="counted_quantity" min="0">
+                </div>
+
+                <div class="field-group" data-field="manufacture_date">
+                    <label>Manufacture Date</label>
+                    <input type="date" id="manufacture_date">
+                </div>
+
+                <div class="field-group" data-field="expiry_date">
+                    <label>Expiry Date</label>
+                    <input type="date" id="expiry_date">
+                </div>
+
+                <div class="field-group" data-field="vendor_reference">
+                    <label>Vendor Reference</label>
+                    <input type="text" id="vendor_reference">
+                </div>
+
+                <div class="field-group" data-field="direction">
+                    <label>Direction</label>
+                    <select id="direction">
+                        <option value="to_vendor">To Vendor</option>
+                        <option value="from_customer">From Customer</option>
+                    </select>
+                </div>
+
+                <div class="field-group" data-field="is_resellable">
+                    <label>Resellable?</label>
+                    <select id="is_resellable">
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
+                </div>
+
+                <div class="field-group" data-field="reason_code">
+                    <label>Reason Code</label>
+                    <select id="reason_code">
+                        <option value="damage">Damaged Goods</option>
+                        <option value="expiry">Expired Goods</option>
+                        <option value="theft">Theft/Loss</option>
+                        <option value="count_correction">Physical Count Correction</option>
+                        <option value="system_error">System Error Correction</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="field-group" data-field="reason">
+                    <label>Reason</label>
+                    <input type="text" id="reason">
+                </div>
+
+                <div class="field-group" data-field="reason_notes">
+                    <label>Reason Notes</label>
+                    <input type="text" id="reason_notes">
+                </div>
+
+                <div class="field-group" data-field="notes">
+                    <label>Notes</label>
+                    <input type="text" id="notes">
+                </div>
+
+                <button type="submit">Submit</button>
+                <p id="error-message" class="error"></p>
+                <p id="success-message" class="success"></p>
+            </form>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/stock-actions.js"></script>
+</body>
+</html>
