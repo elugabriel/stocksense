@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import Sale, SaleLine
 
-# Register your models here.
+admin.site.register(Sale)
+admin.site.register(SaleLine)

@@ -14,6 +14,63 @@ from django.conf import settings
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 
+
+from sales.models import SaleLine
+from django.db.models import Sum
+from datetime import timedelta
+from django.utils import timezone
+
+
+def check_overstock(lookback_days=30, months_of_stock_threshold=6):
+    """
+    Flags products where current stock, divided by recent average daily
+    sell-through, implies more than months_of_stock_threshold months of
+    inventory on hand. Skips products with no sales in the lookback window
+    (nothing to measure velocity against, so can't fairly call it overstocked).
+    """
+    created_count = 0
+    cutoff = timezone.now() - timedelta(days=lookback_days)
+
+    products = Product.objects.filter(is_active=True)
+
+    for product in products:
+        total_stock = (
+            Batch.objects.filter(product=product, is_active=True)
+            .aggregate(total=Sum("quantity"))["total"] or 0
+        )
+
+        if total_stock <= 0:
+            continue
+
+        units_sold = (
+            SaleLine.objects.filter(product=product, sale__created_at__gte=cutoff)
+            .aggregate(total=Sum("quantity"))["total"] or 0
+        )
+
+        if units_sold == 0:
+            continue  # no sales data to judge velocity — skip rather than guess
+
+        daily_sell_rate = units_sold / lookback_days
+        months_of_stock = (total_stock / daily_sell_rate) / 30
+
+        if months_of_stock > months_of_stock_threshold:
+            already_alerted = Alert.objects.filter(
+                product=product,
+                alert_type=Alert.AlertType.OVERSTOCK,
+                is_resolved=False,
+            ).exists()
+
+            if not already_alerted:
+                Alert.objects.create(
+                    alert_type=Alert.AlertType.OVERSTOCK,
+                    severity=Alert.Severity.INFO,
+                    product=product,
+                    message=f"{product.name} ({product.sku}) has ~{months_of_stock:.1f} months of stock on hand ({total_stock} units at current sell rate) — consider slowing reorders.",
+                )
+                created_count += 1
+
+    return created_count
+
 def check_reorder_levels():
     """
     For every active product, sum stock across all active batches.

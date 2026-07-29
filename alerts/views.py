@@ -28,6 +28,25 @@ class AlertViewSet(viewsets.ModelViewSet):
         alert.save()
         return Response(AlertSerializer(alert).data)
 
+
+    @action(detail=False, methods=["post"], url_path="run-checks")
+    def run_checks(self, request):
+        from .services import (
+            check_reorder_levels, check_critical_threshold,
+            check_out_of_stock, check_expiry_alerts, check_abnormal_movements,
+            check_overstock,
+        )
+        results = {
+            "reorder": check_reorder_levels(),
+            "critical": check_critical_threshold(),
+            "out_of_stock": check_out_of_stock(),
+            "expiry": check_expiry_alerts(),
+            "abnormal_movement": check_abnormal_movements(),
+            "overstock": check_overstock(),
+        }
+        return Response({"created": results, "total": sum(results.values())})
+
+
     @action(detail=False, methods=["post"], url_path="run-checks")
     def run_checks(self, request):
         from .services import (
@@ -42,3 +61,6 @@ class AlertViewSet(viewsets.ModelViewSet):
             "abnormal_movement": check_abnormal_movements(),
         }
         return Response({"created": results, "total": sum(results.values())})
+
+
+
