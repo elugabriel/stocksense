@@ -21,6 +21,9 @@ TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
 TWILIO_FROM_NUMBER = env("TWILIO_FROM_NUMBER", default="")
 SMS_ALERTS_ENABLED = env.bool("SMS_ALERTS_ENABLED", default=False)
 
+
+AI_ENGINE_URL = env("AI_ENGINE_URL", default="http://127.0.0.1:8001")
+
 INSTALLED_APPS = [
     "daphne",
     "channels",
