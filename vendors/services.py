@@ -1,0 +1,48 @@
+from django.utils import timezone
+from django.db.models import F
+from .models import Vendor, PurchaseOrder
+
+
+def calculate_vendor_score(vendor):
+    """
+    Simple weighted score out of 100:
+    - 70% weight on on-time delivery rate
+    - 30% weight on how close actual lead time is to quoted lead time
+      (penalizes both being much slower AND wildly inconsistent)
+    Returns None if there isn't enough order history to score fairly.
+    """
+    received_orders = vendor.purchase_orders.filter(
+        status=PurchaseOrder.Status.RECEIVED,
+        actual_delivery_date__isnull=False,
+    )
+
+    received_count = received_orders.count()
+    if received_count < 1:
+        return None
+
+    on_time_count = received_orders.filter(
+        actual_delivery_date__lte=F("expected_delivery_date")
+    ).count()
+    on_time_rate = on_time_count / received_count
+
+    if vendor.default_lead_time_days:
+        lead_times = [
+            (po.actual_delivery_date - po.created_at.date()).days
+            for po in received_orders
+            if po.actual_delivery_date and po.created_at
+        ]
+        avg_lead_time = sum(lead_times) / len(lead_times)
+        accuracy_ratio = min(vendor.default_lead_time_days / avg_lead_time, 1) if avg_lead_time > 0 else 1
+    else:
+        accuracy_ratio = 0.5  # neutral score if no quoted lead time to compare against
+
+    score = (on_time_rate * 70) + (accuracy_ratio * 30)
+    return round(score, 2)
+
+
+def update_vendor_score(vendor):
+    score = calculate_vendor_score(vendor)
+    vendor.performance_score = score
+    vendor.performance_score_updated_at = timezone.now()
+    vendor.save(update_fields=["performance_score", "performance_score_updated_at"])
+    return score
