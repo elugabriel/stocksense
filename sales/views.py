@@ -17,7 +17,8 @@ from django.db.models.functions import TruncDate, TruncWeek, TruncMonth
 from django.utils import timezone
 from datetime import timedelta
 
-
+from .services import get_forecasted_revenue
+from core.models import Product
 
 class RevenueReportView(APIView):
     permission_classes = [IsAuthenticated]
@@ -216,3 +217,64 @@ class SaleViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Sale.objects.all().order_by("-created_at")
     serializer_class = SaleSerializer
     permission_classes = [IsAuthenticated]
+    
+    
+class ProfitMarginReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        period = request.query_params.get("period", "daily")
+        days_back = int(request.query_params.get("days", 30))
+
+        cutoff = timezone.now() - timedelta(days=days_back)
+
+        lines = (
+            SaleLine.objects.filter(sale__created_at__gte=cutoff)
+            .select_related("product", "sale")
+        )
+
+        trunc_map = {
+            "daily": TruncDate("sale__created_at"),
+            "weekly": TruncWeek("sale__created_at"),
+            "monthly": TruncMonth("sale__created_at"),
+        }
+        trunc_fn = trunc_map.get(period, TruncDate("sale__created_at"))
+
+        report_data = {}
+        for line in lines.annotate(period_start=trunc_fn):
+            key = line.period_start
+            if key not in report_data:
+                report_data[key] = {"revenue": 0, "cost": 0, "quantity": 0}
+
+            revenue = line.line_total
+            cost = line.product.cost_price * line.quantity
+
+            report_data[key]["revenue"] += revenue
+            report_data[key]["cost"] += cost
+            report_data[key]["quantity"] += line.quantity
+
+        results = []
+        for period_start, data in sorted(report_data.items()):
+            profit = data["revenue"] - data["cost"]
+            margin_percent = (profit / data["revenue"] * 100) if data["revenue"] > 0 else 0
+            results.append({
+                "period_start": period_start.isoformat(),
+                "revenue": str(data["revenue"]),
+                "cost": str(data["cost"]),
+                "profit": str(profit),
+                "gross_margin_percent": round(margin_percent, 1),
+                "units_sold": data["quantity"],
+            })
+
+        return Response({"period": period, "days_covered": days_back, "report": results})
+    
+    
+
+class ForecastedRevenueView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, product_id):
+        product = get_object_or_404(Product, id=product_id)
+        forecast_days = int(request.query_params.get("forecast_days", 30))
+        result = get_forecasted_revenue(product, forecast_days=forecast_days)
+        return Response(result)

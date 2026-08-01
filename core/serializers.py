@@ -9,6 +9,7 @@ class AddStockSerializer(serializers.Serializer):
     warehouse_id = serializers.IntegerField()
     lot_number = serializers.CharField(max_length=100)
     quantity = serializers.IntegerField(min_value=1)
+    unit_cost = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
     manufacture_date = serializers.DateField(required=False, allow_null=True)
     expiry_date = serializers.DateField(required=False, allow_null=True)
 
@@ -28,6 +29,7 @@ class ReceiveStockFromVendorSerializer(serializers.Serializer):
     warehouse_id = serializers.IntegerField()
     lot_number = serializers.CharField(max_length=100)
     quantity = serializers.IntegerField(min_value=1)
+    unit_cost = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
     vendor_reference = serializers.CharField(max_length=100, required=False, allow_blank=True)
     manufacture_date = serializers.DateField(required=False, allow_null=True)
     expiry_date = serializers.DateField(required=False, allow_null=True)

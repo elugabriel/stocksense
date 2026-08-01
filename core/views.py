@@ -15,13 +15,15 @@ from rest_framework.views import APIView
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
-from .models import Batch, StockMovement, Product, Warehouse, StockTransfer, Category
+from .models import Batch, StockMovement, Product, Warehouse, StockTransfer, Category, StockAdjustment
 from .serializers import (
     ProductSerializer, AddStockSerializer, ReceiveStockFromVendorSerializer,
     ReturnStockSerializer, TransferStockSerializer, RemoveDamagedExpiredSerializer,
     PhysicalCountSerializer, WarehouseSerializer, CategorySerializer,
     StockMovementSerializer,
 )
+from .services import calculate_inventory_valuation
+
 
 class TransferStockView(APIView):
     permission_classes = [IsAuthenticated]
@@ -61,6 +63,7 @@ class TransferStockView(APIView):
                 lot_number=source_batch.lot_number,
                 defaults={
                     "quantity": quantity,
+                    "unit_cost": source_batch.unit_cost,
                     "manufacture_date": source_batch.manufacture_date,
                     "expiry_date": source_batch.expiry_date,
                 },
@@ -114,6 +117,7 @@ class TransferStockView(APIView):
             status=status.HTTP_201_CREATED,
         )
 
+
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -136,8 +140,6 @@ class ProductViewSet(viewsets.ModelViewSet):
             )
         serializer = self.get_serializer(product)
         return Response(serializer.data)
-
-
 
 
 class StockDashboardView(APIView):
@@ -171,6 +173,7 @@ class StockDashboardView(APIView):
             "by_warehouse": list(by_warehouse),
         })
 
+
 class AddStockView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -189,6 +192,7 @@ class AddStockView(APIView):
                 lot_number=data["lot_number"],
                 defaults={
                     "quantity": data["quantity"],
+                    "unit_cost": data.get("unit_cost") or product.cost_price,
                     "manufacture_date": data.get("manufacture_date"),
                     "expiry_date": data.get("expiry_date"),
                 },
@@ -215,7 +219,8 @@ class AddStockView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
-        
+
+
 class ReceiveStockFromVendorView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -234,6 +239,7 @@ class ReceiveStockFromVendorView(APIView):
                 lot_number=data["lot_number"],
                 defaults={
                     "quantity": data["quantity"],
+                    "unit_cost": data.get("unit_cost") or product.cost_price,
                     "manufacture_date": data.get("manufacture_date"),
                     "expiry_date": data.get("expiry_date"),
                 },
@@ -262,7 +268,8 @@ class ReceiveStockFromVendorView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
-        
+
+
 class ReturnStockView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -322,10 +329,6 @@ class ReturnStockView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-        
-        
-        
-from .models import StockAdjustment
 
 
 class RemoveDamagedExpiredView(APIView):
@@ -382,7 +385,8 @@ class RemoveDamagedExpiredView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
-        
+
+
 class PhysicalCountView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -447,7 +451,8 @@ class PhysicalCountView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
-        
+
+
 class WarehouseViewSet(viewsets.ModelViewSet):
     queryset = Warehouse.objects.all()
     serializer_class = WarehouseSerializer
@@ -459,7 +464,17 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
 
+
 class StockMovementViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = StockMovement.objects.all().order_by("-timestamp")
     serializer_class = StockMovementSerializer
     permission_classes = [IsAuthenticated]
+
+
+class InventoryValuationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        method = request.query_params.get("method", "weighted_average")
+        result = calculate_inventory_valuation(method=method)
+        return Response(result)

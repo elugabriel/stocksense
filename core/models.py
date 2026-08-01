@@ -151,10 +151,12 @@ class Batch(models.Model):
     )
     lot_number = models.CharField(max_length=100)
     quantity = models.PositiveIntegerField(default=0)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     manufacture_date = models.DateField(null=True, blank=True)
     expiry_date = models.DateField(null=True, blank=True)
     received_date = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+
 
     history = HistoricalRecords()
     objects = BatchQuerySet.as_manager()
