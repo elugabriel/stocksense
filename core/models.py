@@ -346,3 +346,11 @@ class StockAdjustment(models.Model):
 
     def __str__(self):
         return f"{self.product.sku} | {self.reason_code} | {self.quantity_change}"
+    
+class DashboardPreference(models.Model):
+    user = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name="dashboard_preference")
+    selected_kpis = models.JSONField(default=list)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s dashboard preferences"

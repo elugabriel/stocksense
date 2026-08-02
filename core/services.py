@@ -1,4 +1,154 @@
 from .models import Batch, Product
+from django.db.models import Sum
+from django.utils import timezone
+from datetime import timedelta
+from sales.models import SaleLine, Sale
+from alerts.models import Alert
+from vendors.models import Vendor
+from .models import Batch, Product, Warehouse
+from .models import Batch, Product, Warehouse, StockMovement, Branch
+
+
+
+def compare_branch_performance():
+    branches = Branch.objects.filter(is_active=True)
+    comparison = []
+
+    for branch in branches:
+        warehouses = Warehouse.objects.filter(branch=branch, is_active=True)
+        batches = Batch.objects.filter(warehouse__in=warehouses, is_active=True, quantity__gt=0)
+
+        total_stock_units = sum(b.quantity for b in batches)
+        stock_value = sum(b.quantity * (b.unit_cost or b.product.cost_price) for b in batches)
+
+        sales_30d = Sale.objects.filter(
+            branch=branch,
+            created_at__gte=timezone.now() - timedelta(days=30),
+        )
+        revenue_30d = sales_30d.aggregate(total=Sum("total"))["total"] or 0
+
+        comparison.append({
+            "branch_id": branch.id,
+            "branch_name": branch.name,
+            "city": branch.city,
+            "warehouse_count": warehouses.count(),
+            "total_stock_units": total_stock_units,
+            "stock_value": str(round(stock_value, 2)),
+            "revenue_last_30_days": str(revenue_30d),
+        })
+
+    # Warehouses with no branch assigned — group these under "Unassigned"
+    unassigned_warehouses = Warehouse.objects.filter(branch__isnull=True, is_active=True)
+    if unassigned_warehouses.exists():
+        batches = Batch.objects.filter(warehouse__in=unassigned_warehouses, is_active=True, quantity__gt=0)
+        total_stock_units = sum(b.quantity for b in batches)
+        stock_value = sum(b.quantity * (b.unit_cost or b.product.cost_price) for b in batches)
+
+        comparison.append({
+            "branch_id": None,
+            "branch_name": "Unassigned Warehouses",
+            "city": None,
+            "warehouse_count": unassigned_warehouses.count(),
+            "total_stock_units": total_stock_units,
+            "stock_value": str(round(stock_value, 2)),
+            "revenue_last_30_days": "0",
+        })
+
+    comparison.sort(key=lambda b: b["total_stock_units"], reverse=True)
+
+    return {"branches": comparison}
+
+def compare_warehouse_performance():
+    warehouses = Warehouse.objects.filter(is_active=True)
+    comparison = []
+
+    for warehouse in warehouses:
+        batches = Batch.objects.filter(warehouse=warehouse, is_active=True, quantity__gt=0)
+        total_stock_units = sum(b.quantity for b in batches)
+        stock_value = sum(b.quantity * (b.unit_cost or b.product.cost_price) for b in batches)
+
+        movements_30d = StockMovement.objects.filter(
+            warehouse=warehouse,
+            timestamp__gte=timezone.now() - timedelta(days=30),
+        ).count()
+
+        active_alerts = Alert.objects.filter(warehouse=warehouse, is_resolved=False).count()
+
+        comparison.append({
+            "warehouse_id": warehouse.id,
+            "warehouse_name": warehouse.name,
+            "warehouse_type": warehouse.warehouse_type,
+            "total_stock_units": total_stock_units,
+            "stock_value": str(round(stock_value, 2)),
+            "movements_last_30_days": movements_30d,
+            "active_alerts": active_alerts,
+        })
+
+    comparison.sort(key=lambda w: w["total_stock_units"], reverse=True)
+
+    return {"warehouses": comparison}
+
+def _kpi_revenue_30d():
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    total = SaleLine.objects.filter(sale__created_at__gte=thirty_days_ago).aggregate(
+        total=Sum("line_total")
+    )["total"] or 0
+    return {"label": "Revenue (Last 30 Days)", "value": str(total)}
+
+
+def _kpi_active_alerts():
+    return {"label": "Active Alerts", "value": Alert.objects.filter(is_resolved=False).count()}
+
+
+def _kpi_critical_alerts():
+    return {"label": "Critical Alerts", "value": Alert.objects.filter(is_resolved=False, severity="critical").count()}
+
+
+def _kpi_low_stock_count():
+    return {
+        "label": "Low Stock Alerts",
+        "value": Alert.objects.filter(is_resolved=False, alert_type__in=["reorder", "critical", "out_of_stock"]).count(),
+    }
+
+
+def _kpi_sales_today():
+    today = timezone.now().date()
+    today_sales = Sale.objects.filter(created_at__date=today)
+    return {
+        "label": "Sales Today",
+        "value": today_sales.count(),
+        "revenue": str(today_sales.aggregate(total=Sum("total"))["total"] or 0),
+    }
+
+
+def _kpi_active_vendors():
+    return {"label": "Active Vendors", "value": Vendor.objects.filter(status="active").count()}
+
+
+def _kpi_total_inventory_value():
+    result = calculate_inventory_valuation(method="weighted_average")
+    return {"label": "Total Inventory Value", "value": result["total_inventory_value"]}
+
+
+KPI_REGISTRY = {
+    "revenue_30d": _kpi_revenue_30d,
+    "active_alerts": _kpi_active_alerts,
+    "critical_alerts": _kpi_critical_alerts,
+    "low_stock_count": _kpi_low_stock_count,
+    "sales_today": _kpi_sales_today,
+    "active_vendors": _kpi_active_vendors,
+    "total_inventory_value": _kpi_total_inventory_value,
+}
+
+
+def calculate_selected_kpis(kpi_keys):
+    results = {}
+    for key in kpi_keys:
+        if key in KPI_REGISTRY:
+            results[key] = KPI_REGISTRY[key]()
+        else:
+            results[key] = {"error": "Unknown KPI key"}
+    return results
 
 
 def calculate_inventory_valuation(method="weighted_average"):

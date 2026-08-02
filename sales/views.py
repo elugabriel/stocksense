@@ -20,6 +20,21 @@ from datetime import timedelta
 from .services import get_forecasted_revenue
 from core.models import Product
 
+
+
+from .services import get_forecast_vs_actual
+
+
+class ForecastVsActualView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, product_id):
+        product = get_object_or_404(Product, id=product_id)
+        days_back = int(request.query_params.get("days", 30))
+        result = get_forecast_vs_actual(product, days_back=days_back)
+        return Response(result)
+    
+    
 class RevenueReportView(APIView):
     permission_classes = [IsAuthenticated]
 

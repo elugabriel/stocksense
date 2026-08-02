@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     SaleViewSet, RecordSaleView, SalesSummaryView,
     ProductSalesHistoryView, CustomerTrendsView, RevenueReportView,
-    ProfitMarginReportView, ForecastedRevenueView,
+    ProfitMarginReportView, ForecastedRevenueView,ForecastVsActualView,
 )
 
 router = DefaultRouter()
@@ -14,6 +14,7 @@ router.register(r"sales", SaleViewSet, basename="sale")
 
 
 urlpatterns = [
+    path("products/<int:product_id>/forecast-vs-actual/", ForecastVsActualView.as_view(), name="forecast-vs-actual"),
     path("sales/record/", RecordSaleView.as_view(), name="record-sale"),
     path("sales/summary/", SalesSummaryView.as_view(), name="sales-summary"),
     path("sales/customer-trends/", CustomerTrendsView.as_view(), name="customer-trends"),

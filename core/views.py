@@ -24,6 +24,134 @@ from .serializers import (
 )
 from .services import calculate_inventory_valuation
 
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Sum
+from sales.models import Sale, SaleLine
+from alerts.models import Alert
+from vendors.models import Vendor
+
+
+from .models import DashboardPreference
+from .services import calculate_selected_kpis, KPI_REGISTRY
+
+
+from .services import compare_warehouse_performance
+
+from .services import compare_branch_performance
+
+
+class BranchPerformanceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        result = compare_branch_performance()
+        return Response(result)
+
+class WarehousePerformanceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        result = compare_warehouse_performance()
+        return Response(result)
+
+class DashboardKPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        pref, _ = DashboardPreference.objects.get_or_create(user=request.user)
+        selected = pref.selected_kpis or list(KPI_REGISTRY.keys())[:4]  # sensible default
+        results = calculate_selected_kpis(selected)
+        return Response({
+            "available_kpis": list(KPI_REGISTRY.keys()),
+            "selected_kpis": selected,
+            "kpi_data": results,
+        })
+
+    def post(self, request):
+        kpi_keys = request.data.get("selected_kpis", [])
+        invalid = [k for k in kpi_keys if k not in KPI_REGISTRY]
+        if invalid:
+            return Response({"detail": f"Unknown KPI keys: {invalid}"}, status=400)
+
+        pref, _ = DashboardPreference.objects.get_or_create(user=request.user)
+        pref.selected_kpis = kpi_keys
+        pref.save()
+        return Response({"message": "Dashboard preferences saved", "selected_kpis": kpi_keys})
+
+
+class RoleAwareDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        role = user.role
+
+        base_data = {
+            "user_role": role,
+            "role_display": user.get_role_display(),
+        }
+
+        if role in ["super_admin", "org_admin", "executive"]:
+            thirty_days_ago = timezone.now() - timedelta(days=30)
+            revenue = SaleLine.objects.filter(sale__created_at__gte=thirty_days_ago).aggregate(
+                total=Sum("line_total")
+            )["total"] or 0
+            active_alerts = Alert.objects.filter(is_resolved=False).count()
+            critical_alerts = Alert.objects.filter(is_resolved=False, severity="critical").count()
+            vendor_count = Vendor.objects.filter(status="active").count()
+
+            base_data.update({
+                "view_type": "executive",
+                "revenue_last_30_days": str(revenue),
+                "active_alerts": active_alerts,
+                "critical_alerts": critical_alerts,
+                "active_vendors": vendor_count,
+            })
+
+        elif role in ["warehouse_manager", "inventory_officer"]:
+            low_stock_alerts = Alert.objects.filter(
+                is_resolved=False, alert_type__in=["reorder", "critical", "out_of_stock"]
+            ).count()
+            expiry_alerts = Alert.objects.filter(is_resolved=False, alert_type="expiry").count()
+
+            base_data.update({
+                "view_type": "warehouse_operations",
+                "low_stock_alerts": low_stock_alerts,
+                "expiry_alerts": expiry_alerts,
+            })
+
+        elif role == "sales_staff":
+            today = timezone.now().date()
+            today_sales = Sale.objects.filter(created_at__date=today)
+            base_data.update({
+                "view_type": "sales_floor",
+                "sales_today_count": today_sales.count(),
+                "sales_today_revenue": str(today_sales.aggregate(total=Sum("total"))["total"] or 0),
+            })
+
+        elif role == "procurement_officer":
+            pending_reorder_alerts = Alert.objects.filter(is_resolved=False, alert_type="reorder").count()
+            base_data.update({
+                "view_type": "procurement",
+                "pending_reorder_alerts": pending_reorder_alerts,
+                "active_vendors": Vendor.objects.filter(status="active").count(),
+            })
+
+        elif role == "accountant":
+            thirty_days_ago = timezone.now() - timedelta(days=30)
+            revenue = SaleLine.objects.filter(sale__created_at__gte=thirty_days_ago).aggregate(
+                total=Sum("line_total")
+            )["total"] or 0
+            base_data.update({
+                "view_type": "financial",
+                "revenue_last_30_days": str(revenue),
+            })
+
+        else:
+            base_data.update({"view_type": "general"})
+
+        return Response(base_data)
 
 class TransferStockView(APIView):
     permission_classes = [IsAuthenticated]
