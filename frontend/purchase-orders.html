@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StockSense — Purchase Orders</title>
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/dashboard.css?v=3">
+</head>
+<body>
+    <nav class="navbar">
+        <h2>StockSense</h2>
+        <div>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="products.html" class="nav-link">Products</a>
+                <a href="stock-actions.html" class="nav-link">Stock Actions</a>
+                <a href="locations.html" class="nav-link">Warehouses & Categories</a>
+                <a href="movements.html" class="nav-link">Movement History</a>
+                <a href="alerts.html" class="nav-link">Alert Center</a>
+                <a href="vendors.html" class="nav-link">Vendors</a>
+                <a href="purchase-orders.html" class="nav-link">Purchase Orders</a>
+                <a href="vendors.html" class="nav-link">Vendors</a>
+                <a href="purchase-orders.html" class="nav-link">Purchase Orders</a>
+                <a href="users.html" class="nav-link">Users</a>
+                <button id="logout-btn">Log Out</button>
+            </div>
+    </nav>
+
+    <main class="dashboard">
+        <div class="page-header">
+            <h1>Purchase Orders</h1>
+            <button id="add-po-btn">+ New Purchase Order</button>
+        </div>
+
+        <table id="po-table">
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Vendor</th>
+                    <th>Status</th>
+                    <th>Expected Delivery</th>
+                    <th>Actual Delivery</th>
+                    <th>Lines</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </main>
+
+    <div id="modal-overlay" class="modal-overlay" style="display:none;">
+        <div class="modal" style="width: 500px;">
+            <h3>New Purchase Order</h3>
+            <form id="po-form">
+                <label>Vendor ID</label>
+                <input type="number" id="po-vendor" required>
+                <label>Order Number</label>
+                <input type="text" id="po-number" required>
+                <label>Status</label>
+                <select id="po-status">
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent to Vendor</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="received">Fully Received</option>
+                </select>
+                <label>Expected Delivery Date</label>
+                <input type="date" id="po-expected">
+                <label>Actual Delivery Date</label>
+                <input type="date" id="po-actual">
+
+                <h4>Line Items</h4>
+                <div id="po-lines"></div>
+                <button type="button" id="add-line-btn">+ Add Line</button>
+
+                <button type="submit">Save Purchase Order</button>
+                <p id="po-error" class="error"></p>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/purchase-orders.js"></script>
+</body>
+</html>

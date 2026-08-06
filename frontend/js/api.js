@@ -53,11 +53,22 @@ function formatApiError(errorData) {
     if (typeof errorData === "string") return errorData;
     if (errorData.detail) return errorData.detail;
 
+    function stringifyError(value) {
+        if (Array.isArray(value)) {
+            return value.map(stringifyError).filter(Boolean).join(" ");
+        }
+        if (value && typeof value === "object") {
+            return Object.entries(value)
+                .map(([k, v]) => `${k.replace(/_/g, " ")}: ${stringifyError(v)}`)
+                .join(", ");
+        }
+        return String(value);
+    }
+
     const lines = [];
     for (const [field, messages] of Object.entries(errorData)) {
         const fieldLabel = field.replace(/_/g, " ");
-        const messageText = Array.isArray(messages) ? messages.join(" ") : messages;
-        lines.push(`${fieldLabel}: ${messageText}`);
+        lines.push(`${fieldLabel}: ${stringifyError(messages)}`);
     }
     return lines.join(" | ");
 }
