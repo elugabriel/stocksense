@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StockSense — AI Forecasting</title>
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/dashboard.css?v=4">
+</head>
+<body>
+    <nav class="navbar">
+        <h2>StockSense</h2>
+        <div>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="products.html" class="nav-link">Products</a>
+                <a href="stock-actions.html" class="nav-link">Stock Actions</a>
+                <a href="locations.html" class="nav-link">Warehouses & Categories</a>
+                <a href="movements.html" class="nav-link">Movement History</a>
+                <a href="alerts.html" class="nav-link">Alert Center</a>
+                <a href="vendors.html" class="nav-link">Vendors</a>
+                <a href="purchase-orders.html" class="nav-link">Purchase Orders</a>
+                <a href="sales.html" class="nav-link">Sales</a>
+                <a href="forecasting.html" class="nav-link">AI Forecasting</a>
+                <a href="users.html" class="nav-link">Users</a>
+                <button id="logout-btn">Log Out</button>
+            </div>
+    </nav>
+
+    <main class="dashboard">
+        <div class="page-header">
+            <h1>AI Forecasting</h1>
+        </div>
+
+        <section>
+            <h3>Select Product</h3>
+            <label>Product ID</label>
+            <input type="number" id="product-id-input" placeholder="e.g. 1" style="max-width:200px;">
+            <button id="load-product-btn">Load</button>
+        </section>
+
+        <section id="model-comparison-section" style="display:none;">
+            <h3>Model Comparison (Backtested)</h3>
+            <p id="model-comparison-note"></p>
+            <table id="model-comparison-table">
+                <thead><tr><th>Model</th><th>MAPE</th><th>RMSE</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section id="reorder-section" style="display:none;">
+            <h3>Reorder Recommendation</h3>
+            <div class="reorder-form">
+                <label>Current Stock</label>
+                <input type="number" id="reorder-current-stock">
+                <label>Reorder Level</label>
+                <input type="number" id="reorder-level-input">
+                <label>Vendor Lead Time (days)</label>
+                <input type="number" id="reorder-lead-time" value="14">
+                <label>Safety Stock (days)</label>
+                <input type="number" id="reorder-safety-days" value="7">
+                <button id="get-recommendation-btn">Get Recommendation</button>
+            </div>
+            <div id="reorder-result"></div>
+        </section>
+
+        <section id="forecast-chart-section" style="display:none;">
+            <h3>Demand Forecast — Next 30 Days</h3>
+            <p id="forecast-model-note"></p>
+            <table id="forecast-table">
+                <thead><tr><th>Date</th><th>Predicted Quantity</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/forecasting.js"></script>
+</body>
+</html>

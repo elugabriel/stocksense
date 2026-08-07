@@ -21,6 +21,11 @@ class IsScopedToLocation(permissions.BasePermission):
         obj_warehouse = getattr(obj, "warehouse", None)
         obj_branch = getattr(obj, "branch", None)
 
+        # If the object has no warehouse/branch to scope against at all,
+        # it isn't location-specific data — don't block access to it.
+        if obj_warehouse is None and obj_branch is None:
+            return True
+
         if user.warehouse and obj_warehouse:
             return obj_warehouse == user.warehouse
 
