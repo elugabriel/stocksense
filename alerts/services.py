@@ -373,3 +373,55 @@ def notify_unsent_sms_alerts(recipient_phone_number, severity_filter=None):
             sent_count += 1
 
     return sent_count
+
+
+from core.models import Product, Batch
+from sales.models import SaleLine
+
+
+def check_discontinuation_candidates(lookback_days=90, min_days_since_added=30):
+    """
+    Flags products with very low or zero sales over lookback_days,
+    that have existed long enough (min_days_since_added) to have had
+    a fair chance to sell. Skips brand-new products to avoid flagging
+    something just because it hasn't had time to sell yet.
+    """
+    created_count = 0
+    cutoff = timezone.now() - timedelta(days=lookback_days)
+    age_cutoff = timezone.now() - timedelta(days=min_days_since_added)
+
+    products = Product.objects.filter(is_active=True, created_at__lte=age_cutoff)
+
+    for product in products:
+        units_sold = (
+            SaleLine.objects.filter(product=product, sale__created_at__gte=cutoff)
+            .aggregate(total=Sum("quantity"))["total"] or 0
+        )
+
+        current_stock = (
+            Batch.objects.filter(product=product, is_active=True)
+            .aggregate(total=Sum("quantity"))["total"] or 0
+        )
+
+        tied_up_value = current_stock * product.cost_price
+
+        # Candidate if near-zero sales over a meaningful lookback window,
+        # AND there's real stock/capital sitting tied up in it
+        if units_sold <= 1 and current_stock > 0:
+            already_alerted = Alert.objects.filter(
+                product=product,
+                alert_type=Alert.AlertType.OVERSTOCK,  # reuse overstock type; this is a related capital-efficiency signal
+                is_resolved=False,
+                message__contains="discontinuation",
+            ).exists()
+
+            if not already_alerted:
+                Alert.objects.create(
+                    alert_type=Alert.AlertType.OVERSTOCK,
+                    severity=Alert.Severity.INFO,
+                    product=product,
+                    message=f"{product.name} ({product.sku}) is a discontinuation candidate: only {units_sold} unit(s) sold in the last {lookback_days} days, with {current_stock} units (~{tied_up_value:.2f}) still tied up in stock.",
+                )
+                created_count += 1
+
+    return created_count

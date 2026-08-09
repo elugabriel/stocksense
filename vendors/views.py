@@ -7,7 +7,23 @@ from django.db.models import F
 from .models import Vendor, PurchaseOrder, PurchaseOrderLine
 from .serializers import VendorSerializer, PurchaseOrderSerializer
 
+from django.shortcuts import get_object_or_404
+from core.models import Product
+from .services import get_best_vendor_for_product
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+class BestVendorForProductView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, product_id):
+        product = get_object_or_404(Product, id=product_id)
+        result = get_best_vendor_for_product(product)
+        return Response(result)
+    
+    
 class VendorViewSet(viewsets.ModelViewSet):
     queryset = Vendor.objects.all()
     serializer_class = VendorSerializer

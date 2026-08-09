@@ -10,7 +10,7 @@ from statsmodels.tsa.arima.model import ARIMA
 import warnings
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-
+from scipy.optimize import linprog
 
 app = FastAPI(title="StockSense AI Engine")
 
@@ -26,6 +26,81 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+
+
+class ProductOptimizationInput(BaseModel):
+    product_sku: str
+    predicted_demand: float
+    unit_cost: float
+    storage_units_per_item: float = 1.0
+
+
+class OptimizeOrderRequest(BaseModel):
+    products: List[ProductOptimizationInput]
+    budget: float
+    storage_capacity: float
+
+
+@app.post("/optimize-order-quantities")
+def optimize_order_quantities(request: OptimizeOrderRequest):
+    n = len(request.products)
+    if n == 0:
+        return {"error": "No products provided."}
+
+    # Maximize total demand coverage == minimize negative sum of order quantities
+    c = [-1.0] * n
+
+    # Constraint 1: total cost <= budget
+    # Constraint 2: total storage used <= storage_capacity
+    A_ub = [
+        [p.unit_cost for p in request.products],
+        [p.storage_units_per_item for p in request.products],
+    ]
+    b_ub = [request.budget, request.storage_capacity]
+
+    # Each product's order quantity: 0 <= order <= predicted_demand
+    # (never recommend ordering MORE than what's actually forecast to be needed)
+    bounds = [(0, p.predicted_demand) for p in request.products]
+
+    result = linprog(c, A_ub=A_ub, b_ub=b_ub, bounds=bounds, method="highs")
+
+    if not result.success:
+        return {
+            "error": "Optimization failed to find a feasible solution. Constraints may be too tight (e.g. budget or storage capacity is 0 or negative).",
+        }
+
+    allocations = []
+    total_cost = 0
+    total_storage_used = 0
+
+    for i, product in enumerate(request.products):
+        qty = round(result.x[i])
+        cost = round(qty * product.unit_cost, 2)
+        storage_used = round(qty * product.storage_units_per_item, 2)
+        coverage_pct = round((qty / product.predicted_demand * 100), 1) if product.predicted_demand > 0 else 100.0
+
+        allocations.append({
+            "product_sku": product.product_sku,
+            "recommended_order_quantity": qty,
+            "predicted_demand": product.predicted_demand,
+            "demand_coverage_percent": coverage_pct,
+            "cost": cost,
+            "storage_used": storage_used,
+        })
+        total_cost += cost
+        total_storage_used += storage_used
+
+    return {
+        "budget": request.budget,
+        "storage_capacity": request.storage_capacity,
+        "total_cost": round(total_cost, 2),
+        "total_storage_used": round(total_storage_used, 2),
+        "budget_utilization_percent": round(total_cost / request.budget * 100, 1) if request.budget > 0 else 0,
+        "storage_utilization_percent": round(total_storage_used / request.storage_capacity * 100, 1) if request.storage_capacity > 0 else 0,
+        "allocations": allocations,
+    }
 
 @app.get("/health")
 def health_check():
