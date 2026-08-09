@@ -617,3 +617,20 @@ tbody tr:last-child td {
     border: 2px solid #1a2634;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.15);
 }
+
+
+.navbar {
+    visibility: hidden;
+    animation: forceNavReveal 0s 0.6s forwards;
+}
+
+.navbar.nav-ready {
+    visibility: visible;
+    animation: none;
+}
+
+@keyframes forceNavReveal {
+    to {
+        visibility: visible;
+    }
+}

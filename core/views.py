@@ -40,7 +40,16 @@ from .services import compare_warehouse_performance
 
 from .services import compare_branch_performance
 
+from .services import generate_performance_summary
 
+
+class PerformanceSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        days = int(request.query_params.get("days", 7))
+        result = generate_performance_summary(period_days=days)
+        return Response(result)
 class BranchPerformanceView(APIView):
     permission_classes = [IsAuthenticated]
 

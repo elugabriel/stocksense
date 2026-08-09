@@ -8,6 +8,7 @@ from .views import (
     StockMovementViewSet, InventoryValuationView,
     RoleAwareDashboardView, DashboardKPIView,
     WarehousePerformanceView, BranchPerformanceView,
+    PerformanceSummaryView,
 )
 
 router = DefaultRouter()
@@ -17,6 +18,7 @@ router.register(r"categories", CategoryViewSet, basename="category")
 router.register(r"movements", StockMovementViewSet, basename="movement")
 
 urlpatterns = [
+    path("performance-summary/", PerformanceSummaryView.as_view(), name="performance-summary"),
     path("branches/performance/", BranchPerformanceView.as_view(), name="branch-performance"),
     path("warehouses/performance/", WarehousePerformanceView.as_view(), name="warehouse-performance"),
     path("dashboard/kpis/", DashboardKPIView.as_view(), name="dashboard-kpis"),

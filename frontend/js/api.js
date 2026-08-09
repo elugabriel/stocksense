@@ -94,3 +94,52 @@ async function loadAlertBadge() {
 }
 
 document.addEventListener("DOMContentLoaded", loadAlertBadge);
+
+
+const NAV_VISIBILITY = {
+    super_admin: "all",
+    org_admin: "all",
+    executive: ["dashboard.html", "products.html", "movements.html", "vendors.html", "sales.html", "forecasting.html", "comparisons.html"],
+    branch_manager: ["dashboard.html", "products.html", "stock-actions.html", "locations.html", "movements.html", "vendors.html", "sales.html", "comparisons.html"],
+    warehouse_manager: ["dashboard.html", "products.html", "stock-actions.html", "locations.html", "movements.html"],
+    inventory_officer: ["dashboard.html", "products.html", "stock-actions.html", "movements.html"],
+    procurement_officer: ["dashboard.html", "products.html", "vendors.html", "purchase-orders.html"],
+    sales_staff: ["dashboard.html", "products.html", "sales.html"],
+    accountant: ["dashboard.html", "products.html", "sales.html", "forecasting.html", "comparisons.html"],
+    vendor: ["dashboard.html"],
+};
+
+async function applyRoleBasedNav() {
+    const navbar = document.querySelector(".navbar");
+
+    const response = await apiFetch("/dashboard/role-aware/");
+    if (!response || !response.ok) {
+        if (navbar) navbar.classList.add("nav-ready");
+        return;
+    }
+    const data = await response.json();
+    const role = data.user_role;
+
+    const allowedPages = NAV_VISIBILITY[role];
+    if (allowedPages === "all" || !allowedPages) {
+        if (navbar) navbar.classList.add("nav-ready");
+        return;
+    }
+
+    document.querySelectorAll(".navbar .nav-link").forEach((link) => {
+        const href = link.getAttribute("href");
+        if (link.classList.contains("alert-bell-link")) return;
+        if (!allowedPages.includes(href)) {
+            link.style.display = "none";
+        }
+    });
+
+    const usersLink = document.querySelector('a[href="users.html"]');
+    if (usersLink && !allowedPages.includes("users.html")) {
+        usersLink.style.display = "none";
+    }
+
+    if (navbar) navbar.classList.add("nav-ready");
+}
+
+document.addEventListener("DOMContentLoaded", applyRoleBasedNav);
