@@ -72,3 +72,25 @@ function formatApiError(errorData) {
     }
     return lines.join(" | ");
 }
+
+
+async function loadAlertBadge() {
+    const badgeEl = document.getElementById("alert-badge-count");
+    if (!badgeEl) return;
+
+    const response = await apiFetch("/alerts/?resolved=false");
+    if (!response || !response.ok) return;
+
+    const data = await response.json();
+    const list = data.results ?? data;
+    const count = list.length;
+
+    if (count > 0) {
+        badgeEl.textContent = count > 99 ? "99+" : count;
+        badgeEl.style.display = "inline-flex";
+    } else {
+        badgeEl.style.display = "none";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadAlertBadge);
