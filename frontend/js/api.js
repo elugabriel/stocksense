@@ -107,6 +107,7 @@ const NAV_VISIBILITY = {
     sales_staff: ["dashboard.html", "products.html", "sales.html"],
     accountant: ["dashboard.html", "products.html", "sales.html", "forecasting.html", "comparisons.html"],
     vendor: ["dashboard.html"],
+    customer: ["dashboard.html"],
 };
 
 async function applyRoleBasedNav() {
@@ -143,3 +144,13 @@ async function applyRoleBasedNav() {
 }
 
 document.addEventListener("DOMContentLoaded", applyRoleBasedNav);
+
+document.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.getElementById("nav-toggle");
+    const links = document.getElementById("nav-links");
+    if (toggle && links) {
+        toggle.addEventListener("click", () => {
+            links.classList.toggle("nav-links-open");
+        });
+    }
+});

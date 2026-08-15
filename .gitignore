@@ -1,7 +1,30 @@
+# Environment / secrets
 .env
 env/
+ai-engine/venv/
+
+# Python
 __pycache__/
 *.pyc
 db.sqlite3
 *.log
-ai-engine/venv/
+
+# Editor / AI tooling
+.claude/
+.vscode/
+.idea/
+
+# Flutter / Dart (mobile/)
+mobile/**/.dart_tool/
+mobile/**/build/
+mobile/**/.flutter-plugins
+mobile/**/.flutter-plugins-dependencies
+mobile/**/.packages
+mobile/**/pubspec.lock
+mobile/**/*.iml
+mobile/**/android/.gradle/
+mobile/**/android/local.properties
+mobile/**/ios/Pods/
+mobile/**/ios/.symlinks/
+mobile/**/web/
+!mobile/**/web/index.html

@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <title>StockSense — AI Forecasting</title>
     <link rel="stylesheet" href="css/style.css?v=3">
-    <link rel="stylesheet" href="css/dashboard.css?v=4">
+    <link rel="stylesheet" href="css/dashboard.css?v=13">
 </head>
 <body>
     <nav class="navbar">
         <h2>StockSense</h2>
-        <div>
+        <button id="nav-toggle" class="nav-toggle">☰</button>
+        <div id="nav-links">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
             <a href="products.html" class="nav-link">Products</a>
             <a href="stock-actions.html" class="nav-link">Stock Actions</a>
@@ -21,6 +22,7 @@
             <a href="forecasting.html" class="nav-link">AI Forecasting</a>
             <a href="decision-support.html" class="nav-link">Decision Support</a>
             <a href="comparisons.html" class="nav-link">Comparisons</a>
+            <a href="valuation.html" class="nav-link">Valuation</a>
             <a href="users.html" class="nav-link">Users</a>
             <a href="alerts.html" class="nav-link alert-bell-link">
                 <span class="alert-bell">🔔</span>
@@ -47,6 +49,15 @@
             <p id="model-comparison-note"></p>
             <table id="model-comparison-table">
                 <thead><tr><th>Model</th><th>MAPE</th><th>RMSE</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </section>
+
+        <section id="forecast-vs-actual-section" style="display:none;">
+            <h3>Forecast vs Actual (Backtested)</h3>
+            <p id="fva-note"></p>
+            <table id="fva-table">
+                <thead><tr><th>Date</th><th>Predicted</th><th>Actual</th></tr></thead>
                 <tbody></tbody>
             </table>
         </section>

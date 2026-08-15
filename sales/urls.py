@@ -3,8 +3,10 @@ from django.urls import path
 from .views import (
     SaleViewSet, RecordSaleView, SalesSummaryView,
     ProductSalesHistoryView, CustomerTrendsView, RevenueReportView,
-    ProfitMarginReportView, ForecastedRevenueView,ForecastVsActualView,
+    ProfitMarginReportView, ForecastedRevenueView, ForecastVsActualView,
+    PlaceOrderView, MyOrdersView, ConfirmOrderView, FulfillOrderView,
 )
+
 
 router = DefaultRouter()
 router.register(r"sales", SaleViewSet, basename="sale")
@@ -14,6 +16,10 @@ router.register(r"sales", SaleViewSet, basename="sale")
 
 
 urlpatterns = [
+    path("orders/place/", PlaceOrderView.as_view(), name="place-order"),
+    path("orders/mine/", MyOrdersView.as_view(), name="my-orders"),
+    path("orders/<int:order_id>/confirm/", ConfirmOrderView.as_view(), name="confirm-order"),
+    path("orders/<int:order_id>/fulfill/", FulfillOrderView.as_view(), name="fulfill-order"),
     path("products/<int:product_id>/forecast-vs-actual/", ForecastVsActualView.as_view(), name="forecast-vs-actual"),
     path("sales/record/", RecordSaleView.as_view(), name="record-sale"),
     path("sales/summary/", SalesSummaryView.as_view(), name="sales-summary"),

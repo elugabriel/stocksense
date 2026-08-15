@@ -15,6 +15,7 @@ class User(AbstractUser):
         ACCOUNTANT = "accountant", "Accountant"
         VENDOR = "vendor", "Vendor (Portal)"
         EXECUTIVE = "executive", "Executive (Read-only Dashboard)"
+        CUSTOMER = "customer", "Customer"
 
     role = models.CharField(
         max_length=30,
@@ -36,6 +37,7 @@ class User(AbstractUser):
         blank=True,
         related_name="staff",
     )
+    phone = models.CharField(max_length=30, blank=True)
 
     history = HistoricalRecords()
 

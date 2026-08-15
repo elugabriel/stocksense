@@ -33,3 +33,14 @@ class IsScopedToLocation(permissions.BasePermission):
             return obj_branch == user.branch
 
         return False
+    
+class IsStaffUser(permissions.BasePermission):
+    """
+    Blocks customers from staff-only endpoints. Any authenticated role
+    except 'customer' is considered staff for this check.
+    """
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+        return request.user.role != "customer"

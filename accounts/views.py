@@ -1,17 +1,26 @@
-from django.shortcuts import render
-
-# Create your views here.
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from rest_framework import viewsets, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
 from .models import User
-from .serializers import UserSerializer, CreateUserSerializer
+from .serializers import UserSerializer, CreateUserSerializer, CustomerRegistrationSerializer
 
+class CustomerRegisterView(APIView):
+    permission_classes = [AllowAny]
 
+    def post(self, request):
+        serializer = CustomerRegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(
+            {"message": "Account created successfully. Please log in.", "username": user.username},
+            status=status.HTTP_201_CREATED,
+        )
 
 @method_decorator(ratelimit(key='ip', rate='5/m', method='POST', block=True), name='post')
 class RateLimitedTokenObtainPairView(TokenObtainPairView):

@@ -420,20 +420,35 @@ tbody tr:last-child td {
     font-size: 13px;
 }
 
-/* ===== POS / barcode / cart / receipt ===== */
+/* ===== POS / barcode / cart ===== */
 .barcode-row {
     display: flex;
-    gap: 8px;
+    width: 100%;
+    gap: 10px;
     margin-top: 10px;
+    align-items: stretch;
 }
+
 .barcode-row input {
-    flex: 1;
+    flex: 1 1 auto;
+    width: auto !important;
+    min-width: 0;
     padding: 11px 12px;
     font-size: 15px;
     border: 1px solid #d8dde3;
     border-radius: 6px;
+    box-sizing: border-box;
 }
+
+.barcode-row input:focus {
+    outline: none;
+    border-color: #2c3e50;
+    box-shadow: 0 0 0 3px rgba(44,62,80,0.08);
+}
+
 .barcode-row button {
+    flex: 0 0 120px;
+    width: 120px;
     background: #27ae60;
     color: white;
     border: none;
@@ -441,7 +456,9 @@ tbody tr:last-child td {
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
+    white-space: nowrap;
 }
+
 .barcode-row button:hover {
     background: #219150;
 }
@@ -450,12 +467,33 @@ tbody tr:last-child td {
     width: 100%;
     margin-top: 10px;
     border-collapse: collapse;
+    border: 1px solid #edf0f3;
+    border-radius: 8px;
+    overflow: hidden;
 }
-#cart-table th, #cart-table td {
-    padding: 8px;
+#cart-table th {
+    background: #f7f8fa;
+    color: #6b7684;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 10px 8px;
+    border-bottom: 1px solid #f0f2f4;
+    text-align: left;
+}
+#cart-table td {
+    padding: 10px 8px;
     border-bottom: 1px solid #f0f2f4;
     text-align: left;
     font-size: 13px;
+    vertical-align: middle;
+}
+#cart-table input {
+    padding: 6px 8px;
+    border: 1px solid #d8dde3;
+    border-radius: 4px;
+    font-size: 13px;
+    width: auto;
 }
 .cart-remove {
     background: #e74c3c;
@@ -468,6 +506,13 @@ tbody tr:last-child td {
 }
 .cart-remove:hover {
     background: #c0392b;
+}
+
+#cart-total {
+    text-align: right;
+    font-size: 16px;
+    margin: 12px 4px;
+    color: #1a2634;
 }
 
 .modal.receipt {
@@ -586,7 +631,7 @@ tbody tr:last-child td {
     background: #eceff2;
 }
 
-
+/* ===== Alert bell ===== */
 .alert-bell-link {
     position: relative;
     display: inline-flex;
@@ -618,7 +663,7 @@ tbody tr:last-child td {
     box-shadow: 0 0 0 1px rgba(255,255,255,0.15);
 }
 
-
+/* ===== Navbar reveal (role-filter flash guard) ===== */
 .navbar {
     visibility: hidden;
     animation: forceNavReveal 0s 0.6s forwards;
@@ -632,5 +677,147 @@ tbody tr:last-child td {
 @keyframes forceNavReveal {
     to {
         visibility: visible;
+    }
+}
+
+/* ===== Sale modal polish ===== */
+.modal:has(#sale-form) {
+    width: 620px;
+}
+
+#sale-form label {
+    margin-top: 16px;
+}
+
+#sale-form select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #d8dde3;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+#sale-form button[type="submit"] {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+}
+
+#sale-form button[type="submit"]:hover {
+    background: #219150;
+}
+
+/* ===== Tablet-responsive breakpoints ===== */
+
+.nav-toggle {
+    display: none;
+}
+
+@media (max-width: 1024px) {
+    .navbar {
+        flex-wrap: nowrap;
+        padding: 12px 20px;
+        position: relative;
+    }
+
+    .nav-toggle {
+        display: block;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+    }
+
+    #nav-links {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #1a2634;
+        padding: 10px 20px 16px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        z-index: 300;
+    }
+
+    #nav-links.nav-links-open {
+        display: flex;
+    }
+
+    .nav-link {
+        padding: 10px 8px;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .navbar button#logout-btn {
+        margin-left: auto;
+        margin-top: 0;
+    }
+
+    .dashboard {
+        max-width: 100%;
+        padding: 0 16px 40px;
+    }
+
+    #kpi-cards {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .pos-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pos-summary-card {
+        position: static;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .form-section {
+        max-width: 100%;
+    }
+
+    .modal {
+        width: 90vw;
+        max-width: 420px;
+    }
+}
+
+@media (max-width: 700px) {
+    .navbar h2 {
+        font-size: 17px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    #kpi-cards {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .report-links {
+        flex-wrap: wrap;
+    }
+
+    th, td {
+        padding: 8px 10px;
+        font-size: 13px;
     }
 }

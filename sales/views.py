@@ -24,7 +24,129 @@ from core.models import Product
 
 from .services import get_forecast_vs_actual
 
+from .models import Order, OrderLine
+from .serializers import PlaceOrderSerializer, OrderSerializer
 
+
+class PlaceOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PlaceOrderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        branch = None
+        if data.get("branch_id"):
+            branch = get_object_or_404(Branch, id=data["branch_id"])
+        warehouse = None
+        if data.get("warehouse_id"):
+            warehouse = get_object_or_404(Warehouse, id=data["warehouse_id"])
+
+        with transaction.atomic():
+            subtotal = 0
+            order = Order.objects.create(
+                order_number=data["order_number"],
+                customer=request.user,
+                branch=branch,
+                warehouse=warehouse,
+                delivery_address=data.get("delivery_address", ""),
+                notes=data.get("notes", ""),
+            )
+
+            for line_data in data["lines"]:
+                product = get_object_or_404(Product, id=line_data["product_id"])
+                quantity = line_data["quantity"]
+                unit_price = product.selling_price
+                line_total = unit_price * quantity
+                subtotal += line_total
+
+                OrderLine.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                )
+
+            order.subtotal = subtotal
+            order.total = subtotal
+            order.save()
+
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+class MyOrdersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        orders = Order.objects.filter(customer=request.user).order_by("-created_at")
+        return Response(OrderSerializer(orders, many=True).data)
+
+
+class ConfirmOrderView(APIView):
+    """Staff-only: confirms a pending order (does not yet deduct stock)."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id)
+        if order.status != Order.Status.PENDING:
+            return Response({"detail": f"Order is already {order.status}."}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.status = Order.Status.CONFIRMED
+        order.confirmed_at = timezone.now()
+        order.save()
+        return Response(OrderSerializer(order).data)
+
+
+class FulfillOrderView(APIView):
+    """Staff-only: fulfills a confirmed order — this is what actually deducts stock."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        order = get_object_or_404(Order, id=order_id)
+        if order.status != Order.Status.CONFIRMED:
+            return Response({"detail": "Order must be confirmed before it can be fulfilled."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not order.warehouse:
+            return Response({"detail": "Order has no warehouse assigned; cannot deduct stock."}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            for line in order.lines.all():
+                batches = Batch.objects.filter(product=line.product, warehouse=order.warehouse, is_active=True, quantity__gt=0).order_by("received_date")
+                remaining = line.quantity
+                for batch in batches:
+                    if remaining <= 0:
+                        break
+                    deduct = min(batch.quantity, remaining)
+                    batch.quantity -= deduct
+                    batch.save()
+                    remaining -= deduct
+
+                    StockMovement.objects.create(
+                        product=line.product,
+                        warehouse=order.warehouse,
+                        batch=batch,
+                        movement_type=StockMovement.MovementType.SALE,
+                        quantity=-deduct,
+                        reference_id=str(order.id),
+                        performed_by=request.user,
+                        notes=f"Fulfilled order {order.order_number}",
+                    )
+
+                if remaining > 0:
+                    return Response(
+                        {"detail": f"Insufficient stock for {line.product.sku}. Short by {remaining} units."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            order.status = Order.Status.FULFILLED
+            order.fulfilled_at = timezone.now()
+            order.save()
+
+        return Response(OrderSerializer(order).data)
+    
+    
 class ForecastVsActualView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -293,3 +415,32 @@ class ForecastedRevenueView(APIView):
         forecast_days = int(request.query_params.get("forecast_days", 30))
         result = get_forecasted_revenue(product, forecast_days=forecast_days)
         return Response(result)
+    
+
+class PublicCatalogView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        products = Product.objects.filter(is_active=True)
+        results = []
+        for product in products:
+            total_stock = (
+                Batch.objects.filter(product=product, is_active=True)
+                .aggregate(total=Sum("quantity"))["total"] or 0
+            )
+            by_warehouse = (
+                Batch.objects.filter(product=product, is_active=True)
+                .values("warehouse__name", "warehouse__branch__name", "warehouse__branch__city")
+                .annotate(quantity=Sum("quantity"))
+            )
+            results.append({
+                "id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "description": product.description,
+                "selling_price": str(product.selling_price),
+                "total_stock": total_stock,
+                "in_stock": total_stock > 0,
+                "availability_by_location": list(by_warehouse),
+            })
+        return Response({"products": results})

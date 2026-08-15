@@ -5,6 +5,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 });
 
 let cart = [];
+let selectedPaymentMethod = "cash";
 
 async function loadSales() {
     const response = await apiFetch("/sales/");
@@ -15,7 +16,7 @@ async function loadSales() {
     const tbody = document.querySelector("#sales-table tbody");
     tbody.innerHTML = "";
 
-    list.forEach((s) => {
+    list.slice(0, 10).forEach((s) => {
         const date = new Date(s.created_at).toLocaleString();
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -35,21 +36,16 @@ async function loadSales() {
     });
 }
 
-document.getElementById("new-sale-btn").addEventListener("click", () => {
-    cart = [];
-    renderCart();
-    document.getElementById("sale-error").textContent = "";
-    document.getElementById("sale-success").textContent = "";
-    document.getElementById("barcode-error").textContent = "";
-    document.getElementById("modal-overlay").style.display = "flex";
-    document.getElementById("barcode-input").focus();
+// --- Payment method selector ---
+document.querySelectorAll(".pos-payment-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".pos-payment-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedPaymentMethod = btn.dataset.method;
+    });
 });
 
-document.getElementById("modal-overlay").addEventListener("click", (e) => {
-    if (e.target.id === "modal-overlay") document.getElementById("modal-overlay").style.display = "none";
-});
-
-// Barcode lookup — adds item to cart
+// --- Barcode lookup — adds item to cart ---
 async function lookupAndAddToCart() {
     const barcodeEl = document.getElementById("barcode-input");
     const barcode = barcodeEl.value.trim();
@@ -91,6 +87,11 @@ document.getElementById("barcode-input").addEventListener("keydown", (e) => {
     }
 });
 
+document.getElementById("clear-cart-btn").addEventListener("click", () => {
+    cart = [];
+    renderCart();
+});
+
 function renderCart() {
     const tbody = document.querySelector("#cart-table tbody");
     tbody.innerHTML = "";
@@ -101,45 +102,66 @@ function renderCart() {
         subtotal += lineTotal;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td>${item.product_name} (${item.product_sku})</td>
-            <td><input type="number" class="cart-batch" data-index="${index}" placeholder="optional" style="width:70px" value="${item.batch_id ?? ""}"></td>
-            <td><input type="number" class="cart-qty" data-index="${index}" value="${item.quantity}" min="1" style="width:60px"></td>
-            <td><input type="number" step="0.01" class="cart-price" data-index="${index}" value="${item.unit_price}" style="width:80px"></td>
-            <td>${lineTotal.toFixed(2)}</td>
+            <td>${index + 1}</td>
+            <td>${item.product_name}</td>
+            <td>${item.product_sku}</td>
+            <td>₦${parseFloat(item.unit_price).toFixed(2)}</td>
+            <td>
+                <div class="qty-control">
+                    <button type="button" class="qty-dec" data-index="${index}">−</button>
+                    <span>${item.quantity}</span>
+                    <button type="button" class="qty-inc" data-index="${index}">+</button>
+                </div>
+            </td>
+            <td>₦${lineTotal.toFixed(2)}</td>
             <td><button type="button" class="cart-remove" data-index="${index}">✕</button></td>
         `;
         tbody.appendChild(tr);
     });
 
-    document.getElementById("cart-total").innerHTML = `<strong>Subtotal: ${subtotal.toFixed(2)}</strong>`;
+    document.getElementById("cart-count").textContent = cart.length;
+    document.getElementById("summary-item-count").textContent = cart.reduce((sum, i) => sum + i.quantity, 0);
+    document.getElementById("summary-subtotal").textContent = `₦${subtotal.toFixed(2)}`;
+    updateTotal(subtotal);
 
-    document.querySelectorAll(".cart-qty").forEach((el) => {
-        el.addEventListener("change", (e) => {
-            cart[e.target.dataset.index].quantity = parseInt(e.target.value) || 1;
+    document.querySelectorAll(".qty-inc").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            cart[e.target.dataset.index].quantity += 1;
             renderCart();
         });
     });
-    document.querySelectorAll(".cart-price").forEach((el) => {
-        el.addEventListener("change", (e) => {
-            cart[e.target.dataset.index].unit_price = e.target.value;
+    document.querySelectorAll(".qty-dec").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            const idx = e.target.dataset.index;
+            if (cart[idx].quantity > 1) {
+                cart[idx].quantity -= 1;
+            } else {
+                cart.splice(idx, 1);
+            }
             renderCart();
         });
     });
-    document.querySelectorAll(".cart-batch").forEach((el) => {
-        el.addEventListener("change", (e) => {
-            cart[e.target.dataset.index].batch_id = e.target.value ? parseInt(e.target.value) : null;
-        });
-    });
-    document.querySelectorAll(".cart-remove").forEach((el) => {
-        el.addEventListener("click", (e) => {
-            cart.splice(e.target.dataset.index, 1);
+    document.querySelectorAll(".cart-remove").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            cart.splice(e.target.closest("button").dataset.index, 1);
             renderCart();
         });
     });
 }
 
-document.getElementById("sale-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
+function updateTotal(subtotal) {
+    const discount = parseFloat(document.getElementById("sale-discount").value) || 0;
+    const total = Math.max(0, subtotal - discount);
+    document.getElementById("summary-total").textContent = `₦${total.toFixed(2)}`;
+}
+
+document.getElementById("sale-discount").addEventListener("input", () => {
+    const subtotal = cart.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
+    updateTotal(subtotal);
+});
+
+// --- Complete sale ---
+document.getElementById("complete-sale-btn").addEventListener("click", async () => {
     const errorEl = document.getElementById("sale-error");
     const successEl = document.getElementById("sale-success");
     errorEl.textContent = "";
@@ -161,7 +183,7 @@ document.getElementById("sale-form").addEventListener("submit", async (e) => {
         warehouse_id: parseInt(document.getElementById("sale-warehouse").value),
         customer_name: document.getElementById("sale-customer-name").value,
         customer_phone: document.getElementById("sale-customer-phone").value,
-        payment_method: document.getElementById("sale-payment").value,
+        payment_method: selectedPaymentMethod,
         discount: document.getElementById("sale-discount").value || 0,
         lines: lines,
     };
@@ -177,9 +199,12 @@ document.getElementById("sale-form").addEventListener("submit", async (e) => {
     }
 
     const data = await response.json();
-    document.getElementById("modal-overlay").style.display = "none";
-    document.getElementById("sale-form").reset();
     cart = [];
+    document.getElementById("sale-number").value = "";
+    document.getElementById("sale-customer-name").value = "";
+    document.getElementById("sale-customer-phone").value = "";
+    document.getElementById("sale-discount").value = "0";
+    renderCart();
     loadSales();
     showReceipt(data);
 });
@@ -219,7 +244,7 @@ async function showReceiptForSale(saleId) {
     showReceipt(sale);
 }
 
-// Reports (unchanged)
+// --- Reports (unchanged) ---
 document.getElementById("view-summary-btn").addEventListener("click", async () => {
     const response = await apiFetch("/sales/summary/?period=daily&days=30");
     if (!response || !response.ok) return;
@@ -251,6 +276,18 @@ document.getElementById("view-customers-btn").addEventListener("click", async ()
     let html = `<h4>Customer Trends</h4><table><thead><tr><th>Customer</th><th>Phone</th><th>Total Spent</th><th>Orders</th></tr></thead><tbody>`;
     data.customers.forEach((row) => {
         html += `<tr><td>${row.customer_name || "—"}</td><td>${row.customer_phone || "—"}</td><td>${row.total_spent}</td><td>${row.order_count}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    document.getElementById("report-output").innerHTML = html;
+});
+
+document.getElementById("view-profit-btn").addEventListener("click", async () => {
+    const response = await apiFetch("/sales/profit-margin-report/?period=daily&days=30");
+    if (!response || !response.ok) return;
+    const data = await response.json();
+    let html = `<h4>Profit Margin Report</h4><table><thead><tr><th>Date</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin %</th></tr></thead><tbody>`;
+    data.report.forEach((row) => {
+        html += `<tr><td>${row.period_start}</td><td>${row.revenue}</td><td>${row.cost}</td><td>${row.profit}</td><td>${row.gross_margin_percent}%</td></tr>`;
     });
     html += `</tbody></table>`;
     document.getElementById("report-output").innerHTML = html;

@@ -1,6 +1,42 @@
 from rest_framework import serializers
 from .models import Sale, SaleLine
+from .models import Sale, SaleLine, Order, OrderLine
 
+
+class OrderLineInputSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class PlaceOrderSerializer(serializers.Serializer):
+    order_number = serializers.CharField(max_length=100)
+    branch_id = serializers.IntegerField(required=False, allow_null=True)
+    warehouse_id = serializers.IntegerField(required=False, allow_null=True)
+    delivery_address = serializers.CharField(max_length=500, required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    lines = OrderLineInputSerializer(many=True)
+
+
+class OrderLineSerializer(serializers.ModelSerializer):
+    product_sku = serializers.CharField(source="product.sku", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True)
+
+    class Meta:
+        model = OrderLine
+        fields = ["id", "product", "product_sku", "product_name", "quantity", "unit_price", "line_total"]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    lines = OrderLineSerializer(many=True, read_only=True)
+    customer_username = serializers.CharField(source="customer.username", read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            "id", "order_number", "customer", "customer_username", "branch", "warehouse",
+            "status", "subtotal", "total", "delivery_address", "notes",
+            "created_at", "confirmed_at", "fulfilled_at", "lines",
+        ]
 
 class SaleLineInputSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()

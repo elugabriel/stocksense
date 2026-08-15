@@ -1,0 +1,187 @@
+.pos-layout {
+        max-width: 1300px;
+        margin: 30px auto;
+        padding: 0 20px 60px;
+    }
+    
+    .pos-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+    
+    .pos-header h1 {
+        margin: 0 0 4px 0;
+        font-size: 26px;
+        color: #1a2634;
+    }
+    
+    .pos-subtitle {
+        margin: 0;
+        color: #8a94a1;
+        font-size: 13px;
+    }
+    
+    .pos-btn-outline {
+        background: white;
+        color: #2c3e50;
+        border: 1px solid #d0d5dc;
+        padding: 9px 18px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+    }
+    .pos-btn-outline:hover {
+        background: #f4f6f8;
+    }
+    
+    .pos-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 20px;
+        align-items: start;
+    }
+    
+    .pos-left section,
+    .pos-right section {
+        background: white;
+        border: 1px solid #edf0f3;
+        border-radius: 10px;
+        padding: 20px 22px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .pos-cart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    #cart-table {
+        margin-top: 12px;
+    }
+    
+    .qty-control {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .qty-control button {
+        width: 24px;
+        height: 24px;
+        border: 1px solid #d8dde3;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 700;
+        line-height: 1;
+    }
+    .qty-control button:hover {
+        background: #f4f6f8;
+    }
+    
+    .pos-summary-card {
+        position: sticky;
+        top: 90px;
+    }
+    
+    .pos-summary-card label {
+        display: block;
+        margin-top: 14px;
+        margin-bottom: 5px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #6b7684;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    
+    .pos-summary-card input {
+        width: 100%;
+        padding: 9px 10px;
+        border: 1px solid #d8dde3;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+    
+    .pos-summary-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 16px;
+        font-size: 14px;
+        color: #444;
+    }
+    
+    .pos-inline-input {
+        max-width: 100px;
+        text-align: right;
+    }
+    
+    .pos-summary-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 2px solid #edf0f3;
+        font-size: 20px;
+        font-weight: 800;
+        color: #1a2634;
+    }
+    .pos-summary-total span:last-child {
+        color: #27ae60;
+    }
+    
+    .pos-payment-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    
+    .pos-payment-btn {
+        padding: 10px 8px;
+        border: 1.5px solid #d8dde3;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: #444;
+    }
+    
+    .pos-payment-btn.active {
+        border-color: #27ae60;
+        background: #eafaf1;
+        color: #1e8449;
+    }
+    
+    .pos-complete-btn {
+        width: 100%;
+        margin-top: 20px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .pos-complete-btn:hover {
+        background: #219150;
+    }
+    
+    @media (max-width: 900px) {
+        .pos-grid {
+            grid-template-columns: 1fr;
+        }
+        .pos-summary-card {
+            position: static;
+        }
+    }

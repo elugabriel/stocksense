@@ -34,14 +34,37 @@ from vendors.models import Vendor
 
 from .models import DashboardPreference
 from .services import calculate_selected_kpis, KPI_REGISTRY
-
-
 from .services import compare_warehouse_performance
-
 from .services import compare_branch_performance
-
 from .services import generate_performance_summary
 
+class PublicCatalogView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        products = Product.objects.filter(is_active=True)
+        results = []
+        for product in products:
+            total_stock = (
+                Batch.objects.filter(product=product, is_active=True)
+                .aggregate(total=Sum("quantity"))["total"] or 0
+            )
+            by_warehouse = (
+                Batch.objects.filter(product=product, is_active=True)
+                .values("warehouse__name", "warehouse__branch__name", "warehouse__branch__city")
+                .annotate(quantity=Sum("quantity"))
+            )
+            results.append({
+                "id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "description": product.description,
+                "selling_price": str(product.selling_price),
+                "total_stock": total_stock,
+                "in_stock": total_stock > 0,
+                "availability_by_location": list(by_warehouse),
+            })
+        return Response({"products": results})
 
 class PerformanceSummaryView(APIView):
     permission_classes = [IsAuthenticated]

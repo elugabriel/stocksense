@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>StockSense — Inventory Valuation</title>
+    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/dashboard.css?v=13">
+</head>
+<body>
+    <nav class="navbar">
+        <h2>StockSense</h2>
+        <button id="nav-toggle" class="nav-toggle">☰</button>
+        <div id="nav-links">
+            <a href="dashboard.html" class="nav-link">Dashboard</a>
+            <a href="products.html" class="nav-link">Products</a>
+            <a href="stock-actions.html" class="nav-link">Stock Actions</a>
+            <a href="locations.html" class="nav-link">Warehouses & Categories</a>
+            <a href="movements.html" class="nav-link">Movement History</a>
+            <a href="vendors.html" class="nav-link">Vendors</a>
+            <a href="purchase-orders.html" class="nav-link">Purchase Orders</a>
+            <a href="sales.html" class="nav-link">Sales</a>
+            <a href="forecasting.html" class="nav-link">AI Forecasting</a>
+            <a href="decision-support.html" class="nav-link">Decision Support</a>
+            <a href="comparisons.html" class="nav-link">Comparisons</a>
+            <a href="valuation.html" class="nav-link">Valuation</a>
+            <a href="users.html" class="nav-link">Users</a>
+            <a href="alerts.html" class="nav-link alert-bell-link">
+                <span class="alert-bell">🔔</span>
+                <span id="alert-badge-count" class="alert-badge" style="display:none;"></span>
+            </a>
+            <button id="logout-btn">Log Out</button>
+        </div>
+    </nav>
+
+    <main class="dashboard">
+        <div class="page-header">
+            <h1>Inventory Valuation</h1>
+            <div>
+                <label style="display:inline; text-transform:none; font-weight:normal;">Method:</label>
+                <select id="valuation-method" style="width:auto; display:inline-block; padding:8px;">
+                    <option value="weighted_average">Weighted Average</option>
+                    <option value="fifo">FIFO</option>
+                </select>
+                <button id="load-valuation-btn">Load</button>
+            </div>
+        </div>
+
+        <section>
+            <h3>Total Inventory Value</h3>
+            <div id="total-value-display" class="kpi-card" style="border-left-color:#27ae60; max-width:300px;">
+                <div class="kpi-label">Total Value</div>
+                <div class="kpi-value" id="total-value-amount">—</div>
+            </div>
+        </section>
+
+        <section>
+            <h3>By Product</h3>
+            <table id="valuation-table">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product</th>
+                        <th>Total Quantity</th>
+                        <th>Total Value</th>
+                        <th>Batches</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/valuation.js"></script>
+</body>
+</html>
