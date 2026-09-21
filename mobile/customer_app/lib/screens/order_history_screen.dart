@@ -74,7 +74,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           final o = _orders[index];
                           return ExpansionTile(
                             title: Text(o["order_number"]),
-                            subtitle: Text("Total: ₦${o["total"]}"),
+                            subtitle: Text("Total: ${formatMoney(o["total"])}"),
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(color: _statusColor(o["status"]).withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
@@ -84,7 +84,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                               return ListTile(
                                 dense: true,
                                 title: Text("${line["product_name"]} x${line["quantity"]}"),
-                                trailing: Text("₦${line["line_total"]}"),
+                                trailing: Text(formatMoney(line["line_total"])),
                               );
                             }).toList(),
                           );

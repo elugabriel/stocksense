@@ -12,10 +12,13 @@ async function apiFetch(endpoint, options = {}) {
         headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-        ...options,
-        headers,
-    });
+    let response;
+    try {
+        response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+    } catch (err) {
+        // Network-level failure (server down, unreachable) — don't force logout for this
+        return null;
+    }
 
     if (response.status === 401) {
         const refreshed = await refreshAccessToken();
@@ -23,8 +26,13 @@ async function apiFetch(endpoint, options = {}) {
             headers["Authorization"] = `Bearer ${localStorage.getItem("access_token")}`;
             return fetch(`${API_BASE}${endpoint}`, { ...options, headers });
         } else {
-            window.location.href = "index.html";
-            return;
+            // Refresh genuinely failed — token is dead. Clear it and stop retrying.
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
+            if (!window.location.pathname.endsWith("index.html") && window.location.pathname !== "/") {
+                window.location.href = "index.html";
+            }
+            return null;
         }
     }
 
@@ -47,6 +55,15 @@ async function refreshAccessToken() {
         return true;
     }
     return false;
+}
+
+const MONEY_FMT = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+
+// Format a numeric value as pounds sterling, e.g. 1234.5 -> "£1,234.50".
+// Returns "£0.00" for null/undefined/non-numeric input.
+function formatMoney(value) {
+    const num = typeof value === "number" ? value : parseFloat(value);
+    return MONEY_FMT.format(Number.isFinite(num) ? num : 0);
 }
 
 function formatApiError(errorData) {

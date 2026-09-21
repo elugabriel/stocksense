@@ -7,6 +7,17 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 let cart = [];
 let selectedPaymentMethod = "cash";
 
+async function loadWarehouseOptions() {
+    const response = await apiFetch("/warehouses/");
+    if (!response || !response.ok) return;
+    const data = await response.json();
+    const warehouses = data.results ?? data;
+
+    const select = document.getElementById("sale-warehouse");
+    select.innerHTML = `<option value="">Select warehouse...</option>` +
+        warehouses.map((w) => `<option value="${w.id}">${w.name}</option>`).join("");
+}
+
 async function loadSales() {
     const response = await apiFetch("/sales/");
     if (!response || !response.ok) return;
@@ -23,7 +34,7 @@ async function loadSales() {
             <td>${s.sale_number}</td>
             <td>${s.customer_name || "—"}</td>
             <td>${s.payment_method}</td>
-            <td>${s.total}</td>
+            <td>${formatMoney(s.total)}</td>
             <td>${s.sold_by_username || "—"}</td>
             <td>${date}</td>
             <td><button class="receipt-btn" data-id="${s.id}">Receipt</button></td>
@@ -105,7 +116,7 @@ function renderCart() {
             <td>${index + 1}</td>
             <td>${item.product_name}</td>
             <td>${item.product_sku}</td>
-            <td>₦${parseFloat(item.unit_price).toFixed(2)}</td>
+            <td>${formatMoney(item.unit_price)}</td>
             <td>
                 <div class="qty-control">
                     <button type="button" class="qty-dec" data-index="${index}">−</button>
@@ -113,7 +124,7 @@ function renderCart() {
                     <button type="button" class="qty-inc" data-index="${index}">+</button>
                 </div>
             </td>
-            <td>₦${lineTotal.toFixed(2)}</td>
+            <td>${formatMoney(lineTotal)}</td>
             <td><button type="button" class="cart-remove" data-index="${index}">✕</button></td>
         `;
         tbody.appendChild(tr);
@@ -121,7 +132,7 @@ function renderCart() {
 
     document.getElementById("cart-count").textContent = cart.length;
     document.getElementById("summary-item-count").textContent = cart.reduce((sum, i) => sum + i.quantity, 0);
-    document.getElementById("summary-subtotal").textContent = `₦${subtotal.toFixed(2)}`;
+    document.getElementById("summary-subtotal").textContent = formatMoney(subtotal);
     updateTotal(subtotal);
 
     document.querySelectorAll(".qty-inc").forEach((btn) => {
@@ -152,7 +163,7 @@ function renderCart() {
 function updateTotal(subtotal) {
     const discount = parseFloat(document.getElementById("sale-discount").value) || 0;
     const total = Math.max(0, subtotal - discount);
-    document.getElementById("summary-total").textContent = `₦${total.toFixed(2)}`;
+    document.getElementById("summary-total").textContent = formatMoney(total);
 }
 
 document.getElementById("sale-discount").addEventListener("input", () => {
@@ -188,34 +199,55 @@ document.getElementById("complete-sale-btn").addEventListener("click", async () 
         lines: lines,
     };
 
-    const response = await apiFetch("/sales/record/", {
-        method: "POST",
-        body: JSON.stringify(payload),
-    });
+    const completeBtn = document.getElementById("complete-sale-btn");
+    completeBtn.disabled = true;
 
-    if (!response.ok) {
-        errorEl.textContent = formatApiError(await response.json());
-        return;
+    try {
+        const response = await apiFetch("/sales/record/", {
+            method: "POST",
+            body: JSON.stringify(payload),
+        });
+
+        if (!response) {
+            errorEl.textContent = "Could not reach the server. Check your connection and that you are still logged in.";
+            return;
+        }
+
+        if (!response.ok) {
+            let detail;
+            try {
+                detail = formatApiError(await response.json());
+            } catch {
+                detail = `Sale failed (HTTP ${response.status}). The sale number may already be in use, or stock is insufficient.`;
+            }
+            errorEl.textContent = detail;
+            return;
+        }
+
+        const data = await response.json();
+        cart = [];
+        document.getElementById("sale-number").value = "";
+        document.getElementById("sale-customer-name").value = "";
+        document.getElementById("sale-customer-phone").value = "";
+        document.getElementById("sale-discount").value = "0";
+        renderCart();
+        loadSales();
+        successEl.textContent = `Sale ${data.sale_number} recorded.`;
+        showReceipt(data);
+    } catch (err) {
+        errorEl.textContent = `Something went wrong completing the sale: ${err.message}`;
+    } finally {
+        completeBtn.disabled = false;
     }
-
-    const data = await response.json();
-    cart = [];
-    document.getElementById("sale-number").value = "";
-    document.getElementById("sale-customer-name").value = "";
-    document.getElementById("sale-customer-phone").value = "";
-    document.getElementById("sale-discount").value = "0";
-    renderCart();
-    loadSales();
-    showReceipt(data);
 });
 
 function showReceipt(sale) {
     const linesHtml = sale.lines.map((l) =>
-        `<tr><td>${l.product_name} (${l.product_sku})</td><td>${l.quantity}</td><td>${l.unit_price}</td><td>${l.line_total}</td></tr>`
+        `<tr><td>${l.product_name} (${l.product_sku})</td><td>${l.quantity}</td><td>${formatMoney(l.unit_price)}</td><td>${formatMoney(l.line_total)}</td></tr>`
     ).join("");
 
     document.getElementById("receipt-content").innerHTML = `
-        <h3>StockSense — Receipt</h3>
+        <h3>NJSmartStock — Receipt</h3>
         <p><strong>Sale #:</strong> ${sale.sale_number}</p>
         <p><strong>Date:</strong> ${new Date(sale.created_at).toLocaleString()}</p>
         <p><strong>Customer:</strong> ${sale.customer_name || "Walk-in"}</p>
@@ -225,9 +257,9 @@ function showReceipt(sale) {
             <tbody>${linesHtml}</tbody>
         </table>
         <hr>
-        <p><strong>Subtotal:</strong> ${sale.subtotal}</p>
+        <p><strong>Subtotal:</strong> ${formatMoney(sale.subtotal)}</p>
         <p><strong>Discount:</strong> ${sale.discount}</p>
-        <p style="font-size:18px;"><strong>Total: ${sale.total}</strong></p>
+        <p style="font-size:18px;"><strong>Total: ${formatMoney(sale.total)}</strong></p>
         <button onclick="window.print()">Print Receipt</button>
         <button id="close-receipt-btn">Close</button>
     `;
@@ -251,7 +283,7 @@ document.getElementById("view-summary-btn").addEventListener("click", async () =
     const data = await response.json();
     let html = `<h4>Daily Sales Summary (last 30 days)</h4><table><thead><tr><th>Date</th><th>Revenue</th><th>Transactions</th></tr></thead><tbody>`;
     data.summary.forEach((row) => {
-        html += `<tr><td>${row.period_start}</td><td>${row.total_revenue}</td><td>${row.transaction_count}</td></tr>`;
+        html += `<tr><td>${row.period_start}</td><td>${formatMoney(row.total_revenue)}</td><td>${row.transaction_count}</td></tr>`;
     });
     html += `</tbody></table>`;
     document.getElementById("report-output").innerHTML = html;
@@ -263,7 +295,7 @@ document.getElementById("view-revenue-btn").addEventListener("click", async () =
     const data = await response.json();
     let html = `<h4>Revenue by Product</h4><table><thead><tr><th>Product</th><th>Revenue</th><th>Units Sold</th></tr></thead><tbody>`;
     data.report.forEach((row) => {
-        html += `<tr><td>${row.product__name || "—"}</td><td>${row.revenue}</td><td>${row.quantity_sold}</td></tr>`;
+        html += `<tr><td>${row.product__name || "—"}</td><td>${formatMoney(row.revenue)}</td><td>${row.quantity_sold}</td></tr>`;
     });
     html += `</tbody></table>`;
     document.getElementById("report-output").innerHTML = html;
@@ -275,7 +307,7 @@ document.getElementById("view-customers-btn").addEventListener("click", async ()
     const data = await response.json();
     let html = `<h4>Customer Trends</h4><table><thead><tr><th>Customer</th><th>Phone</th><th>Total Spent</th><th>Orders</th></tr></thead><tbody>`;
     data.customers.forEach((row) => {
-        html += `<tr><td>${row.customer_name || "—"}</td><td>${row.customer_phone || "—"}</td><td>${row.total_spent}</td><td>${row.order_count}</td></tr>`;
+        html += `<tr><td>${row.customer_name || "—"}</td><td>${row.customer_phone || "—"}</td><td>${formatMoney(row.total_spent)}</td><td>${row.order_count}</td></tr>`;
     });
     html += `</tbody></table>`;
     document.getElementById("report-output").innerHTML = html;
@@ -287,10 +319,11 @@ document.getElementById("view-profit-btn").addEventListener("click", async () =>
     const data = await response.json();
     let html = `<h4>Profit Margin Report</h4><table><thead><tr><th>Date</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin %</th></tr></thead><tbody>`;
     data.report.forEach((row) => {
-        html += `<tr><td>${row.period_start}</td><td>${row.revenue}</td><td>${row.cost}</td><td>${row.profit}</td><td>${row.gross_margin_percent}%</td></tr>`;
+        html += `<tr><td>${row.period_start}</td><td>${formatMoney(row.revenue)}</td><td>${formatMoney(row.cost)}</td><td>${formatMoney(row.profit)}</td><td>${row.gross_margin_percent}%</td></tr>`;
     });
     html += `</tbody></table>`;
     document.getElementById("report-output").innerHTML = html;
 });
 
+loadWarehouseOptions();
 loadSales();

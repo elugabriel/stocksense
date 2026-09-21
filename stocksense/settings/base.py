@@ -14,7 +14,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 
 SECRET_KEY = env('SECRET_KEY')
 
-DEFAULT_FROM_EMAIL = "alerts@stocksense.local"
+DEFAULT_FROM_EMAIL = "alerts@njsmartstock.local"
 
 TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
 TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")

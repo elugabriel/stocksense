@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text("StockSense Shop", textAlign: TextAlign.center,
+                const Text("NJSmartStock Shop", textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1A2634))),
                 const SizedBox(height: 24),
                 TextField(

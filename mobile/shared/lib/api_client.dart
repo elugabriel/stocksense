@@ -2,6 +2,26 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Format a value as pounds sterling, e.g. 1234.5 -> "£1,234.50".
+/// Accepts num or String; returns "£0.00" for anything non-numeric.
+String formatMoney(dynamic value) {
+  double amount;
+  if (value is num) {
+    amount = value.toDouble();
+  } else {
+    amount = double.tryParse(value?.toString() ?? "") ?? 0;
+  }
+  final negative = amount < 0;
+  final parts = amount.abs().toStringAsFixed(2).split(".");
+  final digits = parts[0];
+  final buffer = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(",");
+    buffer.write(digits[i]);
+  }
+  return "${negative ? "-" : ""}£$buffer.${parts[1]}";
+}
+
 class ApiClient {
   static const String baseUrl = "http://127.0.0.1:8000/api/v1";
 

@@ -68,7 +68,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
       appBar: AppBar(
-        title: const Text("StockSense Shop"),
+        title: const Text("NJSmartStock Shop"),
         backgroundColor: const Color(0xFF27AE60),
         foregroundColor: Colors.white,
         actions: [
@@ -121,7 +121,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                               Text(p["name"], style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
                               Text(p["sku"], style: const TextStyle(color: Colors.grey, fontSize: 12)),
                               const SizedBox(height: 8),
-                              Text("₦${p["selling_price"]}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF27AE60))),
+                              Text(formatMoney(p["selling_price"]), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF27AE60))),
                               const SizedBox(height: 6),
                               Text(
                                 inStock ? "In Stock (${p["total_stock"]} available)" : "Out of Stock",
@@ -215,7 +215,7 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
       final price = double.parse(product["selling_price"]);
       final lineTotal = price * entry.value;
       total += lineTotal;
-      return "${product["name"]} x${entry.value} — ₦${lineTotal.toStringAsFixed(2)}";
+      return "${product["name"]} x${entry.value} — ${formatMoney(lineTotal)}";
     }).toList();
 
     return Padding(
@@ -228,7 +228,7 @@ class _CheckoutSheetState extends State<_CheckoutSheet> {
           const SizedBox(height: 12),
           ...items.map((line) => Padding(padding: const EdgeInsets.symmetric(vertical: 4), child: Text(line))),
           const Divider(),
-          Text("Total: ₦${total.toStringAsFixed(2)}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text("Total: ${formatMoney(total)}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
           ElevatedButton(

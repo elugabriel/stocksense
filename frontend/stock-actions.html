@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>StockSense — Stock Actions</title>
+    <title>NJSmartStock — Stock Actions</title>
     <link rel="stylesheet" href="css/style.css?v=3">
     <link rel="stylesheet" href="css/dashboard.css?v=13">
 </head>
 <body>
     <nav class="navbar">
-        <h2>StockSense</h2>
+        <h2>NJSmartStock</h2>
         <button id="nav-toggle" class="nav-toggle">☰</button>
         <div id="nav-links">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
@@ -48,23 +48,23 @@
 
             <form id="stock-form">
                 <div class="field-group" data-field="product_id">
-                    <label>Product ID</label>
-                    <input type="number" id="product_id" required>
+                    <label>Product</label>
+                    <select id="product_id" required><option value="">Select product...</option></select>
                 </div>
 
                 <div class="field-group" data-field="warehouse_id">
-                    <label>Warehouse ID</label>
-                    <input type="number" id="warehouse_id">
+                    <label>Warehouse</label>
+                    <select id="warehouse_id"><option value="">Select warehouse...</option></select>
                 </div>
 
                 <div class="field-group" data-field="source_warehouse_id">
-                    <label>Source Warehouse ID</label>
-                    <input type="number" id="source_warehouse_id">
+                    <label>Source Warehouse</label>
+                    <select id="source_warehouse_id"><option value="">Select warehouse...</option></select>
                 </div>
 
                 <div class="field-group" data-field="destination_warehouse_id">
-                    <label>Destination Warehouse ID</label>
-                    <input type="number" id="destination_warehouse_id">
+                    <label>Destination Warehouse</label>
+                    <select id="destination_warehouse_id"><option value="">Select warehouse...</option></select>
                 </div>
 
                 <div class="field-group" data-field="batch_id">
@@ -153,6 +153,6 @@
     </main>
 
     <script src="js/api.js"></script>
-    <script src="js/stock-actions.js"></script>
+    <script src="js/stock-actions.js?v=3"></script>
 </body>
 </html>

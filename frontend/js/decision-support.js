@@ -59,7 +59,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
             <div class="kpi-card" style="border-left-color:#27ae60; margin-top:15px;">
                 <p><strong>Recommended:</strong> ${best.vendor_name}</p>
                 <p><strong>Performance Score:</strong> ${best.performance_score ?? "Not yet scored"}</p>
-                <p><strong>Average Unit Cost:</strong> ${best.average_unit_cost}</p>
+                <p><strong>Average Unit Cost:</strong> ${formatMoney(best.average_unit_cost)}</p>
                 <p><strong>Previously Ordered:</strong> ${best.total_units_previously_ordered} units</p>
                 <p><strong>Quoted Lead Time:</strong> ${best.quoted_lead_time_days ?? "N/A"} days</p>
             </div>
@@ -68,7 +68,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
         if (data.all_vendors_considered.length > 1) {
             html += `<h4 style="margin-top:15px;">All Vendors Considered</h4><table><thead><tr><th>Vendor</th><th>Score</th><th>Avg Cost</th></tr></thead><tbody>`;
             data.all_vendors_considered.forEach((v) => {
-                html += `<tr><td>${v.vendor_name}</td><td>${v.performance_score ?? "—"}</td><td>${v.average_unit_cost}</td></tr>`;
+                html += `<tr><td>${v.vendor_name}</td><td>${v.performance_score ?? "—"}</td><td>${formatMoney(v.average_unit_cost)}</td></tr>`;
             });
             html += `</tbody></table>`;
         }
@@ -139,12 +139,12 @@ document.getElementById("logout-btn").addEventListener("click", () => {
             }
     
             let html = `
-                <p><strong>Budget used:</strong> ${data.total_cost} (${data.budget_utilization_percent}%)</p>
+                <p><strong>Budget used:</strong> ${formatMoney(data.total_cost)} (${data.budget_utilization_percent}%)</p>
                 <p><strong>Storage used:</strong> ${data.total_storage_used} (${data.storage_utilization_percent}%)</p>
                 <table><thead><tr><th>SKU</th><th>Order Qty</th><th>Demand Coverage</th><th>Cost</th></tr></thead><tbody>
             `;
             data.allocations.forEach((a) => {
-                html += `<tr><td>${a.product_sku}</td><td>${a.recommended_order_quantity}</td><td>${a.demand_coverage_percent}%</td><td>${a.cost}</td></tr>`;
+                html += `<tr><td>${a.product_sku}</td><td>${a.recommended_order_quantity}</td><td>${a.demand_coverage_percent}%</td><td>${formatMoney(a.cost)}</td></tr>`;
             });
             html += `</tbody></table>`;
             resultEl.innerHTML = html;

@@ -80,6 +80,40 @@
     color: #1a2634;
 }
 
+.muted {
+    color: #8a97a5;
+    font-size: 0.9em;
+}
+
+/* margin bar used in the Product Performance comparison */
+.bar-cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 90px;
+    height: 20px;
+    background: #eef1f4;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #2ecc71;
+    opacity: 0.35;
+}
+
+.bar-label {
+    position: relative;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a2634;
+}
+
 section {
     background: white;
     padding: 24px;

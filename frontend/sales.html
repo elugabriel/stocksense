@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>StockSense — Point of Sale</title>
+    <title>NJSmartStock — Point of Sale</title>
     <link rel="stylesheet" href="css/style.css?v=3">
     <link rel="stylesheet" href="css/dashboard.css?v=13">
     <link rel="stylesheet" href="css/pos.css?v=1">
 </head>
 <body>
     <nav class="navbar">
-        <h2>StockSense</h2>
+        <h2>NJSmartStock</h2>
         <button id="nav-toggle" class="nav-toggle">☰</button>
         <div id="nav-links">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
@@ -94,8 +94,8 @@
                     <h3>Sale Details</h3>
                     <label>Sale Number</label>
                     <input type="text" id="sale-number" placeholder="e.g. SALE-001">
-                    <label>Warehouse ID</label>
-                    <input type="number" id="sale-warehouse">
+                    <label>Warehouse</label>
+                    <select id="sale-warehouse"><option value="">Select warehouse...</option></select>
                     <label>Customer Name</label>
                     <input type="text" id="sale-customer-name" placeholder="Walk-in customer">
                     <label>Customer Phone</label>
@@ -136,6 +136,6 @@
     </div>
 
     <script src="js/api.js"></script>
-    <script src="js/sales.js"></script>
+    <script src="js/sales.js?v=3"></script>
 </body>
 </html>

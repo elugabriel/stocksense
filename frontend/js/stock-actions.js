@@ -21,7 +21,34 @@ document.getElementById("logout-btn").addEventListener("click", () => {
         damage: "/stock/remove-damaged/",
         count: "/stock/physical-count/",
     };
-    
+
+    async function loadProductOptions() {
+        const response = await apiFetch("/products/");
+        if (!response || !response.ok) return;
+        const data = await response.json();
+        const products = data.results ?? data;
+
+        const optionsHtml = `<option value="">Select product...</option>` +
+            products.map((p) => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join("");
+        document.getElementById("product_id").innerHTML = optionsHtml;
+    }
+
+    async function loadWarehouseOptions() {
+        const response = await apiFetch("/warehouses/");
+        if (!response || !response.ok) return;
+        const data = await response.json();
+        const warehouses = data.results ?? data;
+
+        const optionsHtml = `<option value="">Select warehouse...</option>` +
+            warehouses.map((w) => `<option value="${w.id}">${w.name}</option>`).join("");
+        ["warehouse_id", "source_warehouse_id", "destination_warehouse_id"].forEach((id) => {
+            document.getElementById(id).innerHTML = optionsHtml;
+        });
+    }
+
+    loadProductOptions();
+    loadWarehouseOptions();
+
     function updateVisibleFields() {
         const action = document.getElementById("action-type").value;
         const visibleFields = FIELDS_BY_ACTION[action];
@@ -65,7 +92,10 @@ document.getElementById("logout-btn").addEventListener("click", () => {
             body: JSON.stringify(payload),
         });
     
-        if (!response) return;
+        if (!response) {
+            errorEl.textContent = "Couldn't reach the server. Check your connection and try again.";
+            return;
+        }
     
         if (!response.ok) {
                 const errorData = await response.json();

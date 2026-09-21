@@ -25,13 +25,13 @@ async function loadRoleAwareDashboard() {
     if (data.view_type === "executive") {
         sectionHtml = `
             <h3>Executive Overview</h3>
-            <p><strong>Revenue (30 days):</strong> ${data.revenue_last_30_days}</p>
+            <p><strong>Revenue (30 days):</strong> ${formatMoney(data.revenue_last_30_days)}</p>
             <p><strong>Active Alerts:</strong> ${data.active_alerts} (${data.critical_alerts} critical)</p>
             <p><strong>Active Vendors:</strong> ${data.active_vendors}</p>`;
     } else if (data.view_type === "financial") {
         sectionHtml = `
             <h3>Financial Overview</h3>
-            <p><strong>Revenue (30 days):</strong> ${data.revenue_last_30_days}</p>`;
+            <p><strong>Revenue (30 days):</strong> ${formatMoney(data.revenue_last_30_days)}</p>`;
     } else if (data.view_type === "warehouse_operations") {
         sectionHtml = `
             <h3>Warehouse Operations</h3>
@@ -41,7 +41,7 @@ async function loadRoleAwareDashboard() {
         sectionHtml = `
             <h3>Today's Sales</h3>
             <p><strong>Transactions:</strong> ${data.sales_today_count}</p>
-            <p><strong>Revenue Today:</strong> ${data.sales_today_revenue}</p>`;
+            <p><strong>Revenue Today:</strong> ${formatMoney(data.sales_today_revenue)}</p>`;
     } else if (data.view_type === "procurement") {
         sectionHtml = `
             <h3>Procurement Overview</h3>

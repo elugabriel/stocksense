@@ -83,7 +83,7 @@ async function showPerformance(vendorId, vendorName) {
         if (cost.cost_history && cost.cost_history.length > 0) {
             html += `<h4>Cost History</h4><ul>`;
             cost.cost_history.forEach((c) => {
-                html += `<li>${c.order_date} — ${c.product_sku}: ${c.unit_cost} (PO ${c.order_number})</li>`;
+                html += `<li>${c.order_date} — ${c.product_sku}: ${formatMoney(c.unit_cost)} (PO ${c.order_number})</li>`;
             });
             html += `</ul>`;
         } else {
@@ -135,6 +135,8 @@ document.getElementById("modal-overlay").addEventListener("click", (e) => {
 
 function openVendorModal(vendor) {
     const isEdit = !!vendor;
+    const vendorCountry = vendor && vendor.country ? vendor.country : DEFAULT_COUNTRY;
+    const vendorCity = vendor ? (vendor.city ?? "") : "";
     openModal(isEdit ? "Edit Vendor" : "Add Vendor", `
         <label>Name</label>
         <input type="text" id="m-name" required>
@@ -145,7 +147,9 @@ function openVendorModal(vendor) {
         <label>Phone</label>
         <input type="text" id="m-phone">
         <label>Country</label>
-        <input type="text" id="m-country">
+        <select id="m-country">${countryOptionsHtml(vendorCountry)}</select>
+        <label>City / Town</label>
+        <select id="m-city">${cityOptionsHtml(vendorCountry, vendorCity)}</select>
         <label>Payment Terms</label>
         <input type="text" id="m-terms" placeholder="e.g. Net 30">
         <label>Default Lead Time (days)</label>
@@ -166,6 +170,7 @@ function openVendorModal(vendor) {
                 email: document.getElementById("m-email").value,
                 phone: document.getElementById("m-phone").value,
                 country: document.getElementById("m-country").value,
+                city: document.getElementById("m-city").value,
                 payment_terms: document.getElementById("m-terms").value,
                 default_lead_time_days: document.getElementById("m-leadtime").value || null,
                 status: document.getElementById("m-status").value,
@@ -183,10 +188,15 @@ function openVendorModal(vendor) {
     document.getElementById("m-contact").value = vendor ? (vendor.contact_person ?? "") : "";
     document.getElementById("m-email").value = vendor ? (vendor.email ?? "") : "";
     document.getElementById("m-phone").value = vendor ? (vendor.phone ?? "") : "";
-    document.getElementById("m-country").value = vendor ? (vendor.country ?? "") : "";
     document.getElementById("m-terms").value = vendor ? (vendor.payment_terms ?? "") : "";
     document.getElementById("m-leadtime").value = vendor ? (vendor.default_lead_time_days ?? "") : "";
     document.getElementById("m-status").value = vendor ? vendor.status : "active";
+
+    const vCountry = document.getElementById("m-country");
+    const vCity = document.getElementById("m-city");
+    vCountry.addEventListener("change", () => {
+        vCity.innerHTML = cityOptionsHtml(vCountry.value, "");
+    });
 }
 
 document.getElementById("add-vendor-btn").addEventListener("click", () => openVendorModal(null));

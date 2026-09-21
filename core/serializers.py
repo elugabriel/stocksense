@@ -76,7 +76,7 @@ class PhysicalCountSerializer(serializers.Serializer):
 class WarehouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Warehouse
-        fields = ["id", "name", "branch", "warehouse_type", "address", "city", "capacity_units", "manager", "is_active"]
+        fields = ["id", "name", "branch", "warehouse_type", "address", "city", "country", "capacity_units", "manager", "is_active"]
         read_only_fields = ["id"]
 
 

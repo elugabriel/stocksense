@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>StockSense — Warehouses & Categories</title>
+    <title>NJSmartStock — Warehouses & Categories</title>
     <link rel="stylesheet" href="css/style.css?v=3">
     <link rel="stylesheet" href="css/dashboard.css?v=13">
 </head>
 <body>
     <nav class="navbar">
-        <h2>StockSense</h2>
+        <h2>NJSmartStock</h2>
         <button id="nav-toggle" class="nav-toggle">☰</button>
         <div id="nav-links">
             <a href="dashboard.html" class="nav-link">Dashboard</a>
@@ -42,7 +42,7 @@
             </div>
             <table id="warehouses-table">
                 <thead>
-                    <tr><th>ID</th><th>Name</th><th>Type</th><th>City</th><th>Active</th><th>Action</th></tr>
+                    <tr><th>ID</th><th>Name</th><th>Type</th><th>City</th><th>Country</th><th>Active</th><th>Action</th></tr>
                 </thead>
                 <tbody></tbody>
             </table>
@@ -70,6 +70,7 @@
     </div>
 
     <script src="js/api.js"></script>
+    <script src="js/locations-data.js?v=2"></script>
     <script src="js/locations.js"></script>
 </body>
 </html>

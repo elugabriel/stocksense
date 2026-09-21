@@ -17,7 +17,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
         tbody.innerHTML = "";
         warehouses.forEach((w) => {
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${w.id}</td><td>${w.name}</td><td>${w.warehouse_type}</td><td>${w.city ?? "—"}</td><td>${w.is_active ? "Yes" : "No"}</td>
+            tr.innerHTML = `<td>${w.id}</td><td>${w.name}</td><td>${w.warehouse_type}</td><td>${w.city ?? "—"}</td><td>${w.country ?? "—"}</td><td>${w.is_active ? "Yes" : "No"}</td>
                 <td>
                     <button class="edit-btn" data-id="${w.id}">Edit</button>
                     <button class="delete-btn" data-id="${w.id}">Delete</button>
@@ -106,6 +106,8 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 
     function openWarehouseModal(warehouse) {
         const isEdit = !!warehouse;
+        const currentCountry = warehouse && warehouse.country ? warehouse.country : DEFAULT_COUNTRY;
+        const currentCity = warehouse ? (warehouse.city ?? "") : "";
         openModal(isEdit ? "Edit Warehouse" : "Add Warehouse", `
             <label>Name</label>
             <input type="text" id="m-name" required>
@@ -116,8 +118,10 @@ document.getElementById("logout-btn").addEventListener("click", () => {
                 <option value="transit">Transit/Staging</option>
                 <option value="cold_storage">Cold Storage</option>
             </select>
-            <label>City</label>
-            <input type="text" id="m-city">
+            <label>Country</label>
+            <select id="m-country">${countryOptionsHtml(currentCountry)}</select>
+            <label>City / Town</label>
+            <select id="m-city">${cityOptionsHtml(currentCountry, currentCity)}</select>
             <label><input type="checkbox" id="m-active"> Active</label>
         `, async () => {
             const errorEl = document.getElementById("modal-error");
@@ -126,6 +130,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
                 body: JSON.stringify({
                     name: document.getElementById("m-name").value,
                     warehouse_type: document.getElementById("m-type").value,
+                    country: document.getElementById("m-country").value,
                     city: document.getElementById("m-city").value,
                     is_active: document.getElementById("m-active").checked,
                 }),
@@ -140,8 +145,13 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 
         document.getElementById("m-name").value = warehouse ? warehouse.name : "";
         document.getElementById("m-type").value = warehouse ? warehouse.warehouse_type : "main";
-        document.getElementById("m-city").value = warehouse ? (warehouse.city ?? "") : "";
         document.getElementById("m-active").checked = warehouse ? warehouse.is_active : true;
+
+        const countrySelect = document.getElementById("m-country");
+        const citySelect = document.getElementById("m-city");
+        countrySelect.addEventListener("change", () => {
+            citySelect.innerHTML = cityOptionsHtml(countrySelect.value, "");
+        });
     }
 
     function openCategoryModal(category) {

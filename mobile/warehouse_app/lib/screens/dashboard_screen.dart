@@ -49,7 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F5F7),
       appBar: AppBar(
-        title: const Text("StockSense Warehouse"),
+        title: const Text("NJSmartStock Warehouse"),
         backgroundColor: const Color(0xFF1A2634),
         foregroundColor: Colors.white,
         actions: [

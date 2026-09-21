@@ -23,8 +23,8 @@ document.getElementById("logout-btn").addEventListener("click", () => {
                 <td>${product.sku}</td>
                 <td>${product.name}</td>
                 <td>${product.category ?? "—"}</td>
-                <td>${product.cost_price}</td>
-                <td>${product.selling_price}</td>
+                <td>${formatMoney(product.cost_price)}</td>
+                <td>${formatMoney(product.selling_price)}</td>
                 <td>${product.reorder_level}</td>
                 <td>${product.is_active ? "Yes" : "No"}</td>
                 <td>

@@ -22,7 +22,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
     
         data.products.forEach((p) => {
             const batchDetails = p.batch_breakdown.map(
-                (b) => `Lot ${b.lot_number}: ${b.quantity} @ ${b.unit_cost}`
+                (b) => `Lot ${b.lot_number}: ${b.quantity} @ ${formatMoney(b.unit_cost)}`
             ).join(" | ");
     
             const tr = document.createElement("tr");
@@ -30,7 +30,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
                 <td>${p.product_sku}</td>
                 <td>${p.product_name}</td>
                 <td>${p.total_quantity}</td>
-                <td>${p.total_value}</td>
+                <td>${formatMoney(p.total_value)}</td>
                 <td style="font-size:12px; color:#777;">${batchDetails}</td>
             `;
             tbody.appendChild(tr);

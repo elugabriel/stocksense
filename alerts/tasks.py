@@ -12,7 +12,7 @@ def generate_and_send_weekly_summary(recipient_email=None):
         from django.conf import settings
 
         send_mail(
-            subject=f"StockSense Weekly Summary — {summary['generated_at'][:10]}",
+            subject=f"NJSmartStock Weekly Summary — {summary['generated_at'][:10]}",
             message=summary["summary_text"],
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[recipient_email],

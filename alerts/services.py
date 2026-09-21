@@ -280,13 +280,13 @@ def check_abnormal_movements(lookback_days=30, std_dev_multiplier=3):
 
 
 def send_alert_email(alert, recipient_email):
-    subject = f"[StockSense Alert] {alert.get_severity_display()}: {alert.get_alert_type_display()}"
+    subject = f"[NJSmartStock Alert] {alert.get_severity_display()}: {alert.get_alert_type_display()}"
     body = (
         f"{alert.message}\n\n"
         f"Product: {alert.product.name} ({alert.product.sku})\n"
         f"Severity: {alert.get_severity_display()}\n"
         f"Created: {alert.created_at.strftime('%Y-%m-%d %H:%M')}\n\n"
-        f"Log in to StockSense to review and resolve this alert."
+        f"Log in to NJSmartStock to review and resolve this alert."
     )
 
     send_mail(
@@ -332,7 +332,7 @@ def send_alert_sms(alert, recipient_phone_number):
     if not (settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_FROM_NUMBER):
         return False
 
-    body = f"[StockSense {alert.get_severity_display()}] {alert.message}"
+    body = f"[NJSmartStock {alert.get_severity_display()}] {alert.message}"
     # SMS has a practical length limit — trim long messages
     if len(body) > 300:
         body = body[:297] + "..."

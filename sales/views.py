@@ -16,6 +16,7 @@ from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate, TruncWeek, TruncMonth
 from django.utils import timezone
 from datetime import timedelta
+from decimal import Decimal
 
 from .services import get_forecasted_revenue
 from core.models import Product
@@ -187,6 +188,71 @@ class RevenueReportView(APIView):
             return Response({"detail": "group_by must be one of: product, category, branch"}, status=400)
 
         return Response({"group_by": group_by, "report": list(data)})
+
+
+class ProductComparisonView(APIView):
+    """Per-product comparison by sales volume and profitability.
+
+    Query params:
+      days  - restrict to sales in the last N days (default: all time)
+      sort  - one of revenue | profit | margin | units (default: revenue)
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    SORT_KEYS = {
+        "revenue": "revenue",
+        "profit": "profit",
+        "margin": "gross_margin_percent",
+        "units": "units_sold",
+    }
+
+    def get(self, request):
+        sort = request.query_params.get("sort", "revenue")
+        sort_key = self.SORT_KEYS.get(sort, "revenue")
+
+        lines = SaleLine.objects.select_related("product", "product__category")
+
+        days = request.query_params.get("days")
+        if days:
+            cutoff = timezone.now() - timedelta(days=int(days))
+            lines = lines.filter(sale__created_at__gte=cutoff)
+
+        rows = {}
+        for line in lines:
+            product = line.product
+            row = rows.setdefault(product.id, {
+                "sku": product.sku,
+                "name": product.name,
+                "category": product.category.name if product.category else None,
+                "units_sold": 0,
+                "revenue": Decimal("0.00"),
+                "cost": Decimal("0.00"),
+            })
+            row["units_sold"] += line.quantity
+            row["revenue"] += line.line_total
+            row["cost"] += product.cost_price * line.quantity
+
+        report = []
+        for row in rows.values():
+            profit = row["revenue"] - row["cost"]
+            margin = (profit / row["revenue"] * 100) if row["revenue"] > 0 else Decimal("0")
+            avg_price = (row["revenue"] / row["units_sold"]) if row["units_sold"] else Decimal("0")
+            report.append({
+                "sku": row["sku"],
+                "name": row["name"],
+                "category": row["category"],
+                "units_sold": row["units_sold"],
+                "revenue": str(row["revenue"].quantize(Decimal("0.01"))),
+                "cost": str(row["cost"].quantize(Decimal("0.01"))),
+                "profit": str(profit.quantize(Decimal("0.01"))),
+                "gross_margin_percent": round(float(margin), 1),
+                "avg_selling_price": str(avg_price.quantize(Decimal("0.01"))),
+            })
+
+        report.sort(key=lambda r: float(r[sort_key]) if sort_key != "units_sold" else r[sort_key], reverse=True)
+
+        return Response({"sort": sort, "count": len(report), "report": report})
 
 class CustomerTrendsView(APIView):
     permission_classes = [IsAuthenticated]

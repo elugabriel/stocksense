@@ -30,6 +30,7 @@ class Branch(models.Model):
     name = models.CharField(max_length=255)
     address = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -61,6 +62,7 @@ class Warehouse(models.Model):
     )
     address = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
     capacity_units = models.PositiveIntegerField(
         null=True,
         blank=True,

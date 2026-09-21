@@ -12,11 +12,11 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from scipy.optimize import linprog
 
-app = FastAPI(title="StockSense AI Engine")
+app = FastAPI(title="NJSmartStock AI Engine")
 
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="StockSense AI Engine")
+app = FastAPI(title="NJSmartStock AI Engine")
 
 app.add_middleware(
     CORSMiddleware,

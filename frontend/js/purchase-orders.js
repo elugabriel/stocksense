@@ -55,21 +55,39 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 
     let lineCount = 0;
 
-    function addLineRow() {
-        lineCount++;
-        const div = document.createElement("div");
-        div.className = "po-line-row";
-        div.innerHTML = `
-            <input type="number" placeholder="Product ID" class="line-product" style="width:30%">
-            <input type="number" placeholder="Qty" class="line-qty" style="width:20%">
-            <input type="number" step="0.01" placeholder="Unit Cost" class="line-cost" style="width:25%">
-            <button type="button" class="remove-line-btn">Remove</button>
-        `;
-        div.querySelector(".remove-line-btn").addEventListener("click", () => div.remove());
-        document.getElementById("po-lines").appendChild(div);
-    }
+    let cachedProducts = [];
 
-    document.getElementById("add-line-btn").addEventListener("click", addLineRow);
+async function loadProductOptions() {
+    if (cachedProducts.length > 0) return cachedProducts;
+    const response = await apiFetch("/products/");
+    if (response && response.ok) {
+        const data = await response.json();
+        cachedProducts = data.results ?? data;
+    }
+    return cachedProducts;
+}
+
+function productOptionsHtml() {
+    return `<option value="">Select product...</option>` +
+        cachedProducts.map((p) => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join("");
+}
+
+async function addLineRow() {
+    await loadProductOptions();
+    lineCount++;
+    const div = document.createElement("div");
+    div.className = "po-line-row";
+    div.innerHTML = `
+        <select class="line-product" style="width:35%">${productOptionsHtml()}</select>
+        <input type="number" placeholder="Qty" class="line-qty" style="width:20%">
+        <input type="number" step="0.01" placeholder="Unit Cost" class="line-cost" style="width:25%">
+        <button type="button" class="remove-line-btn">Remove</button>
+    `;
+    div.querySelector(".remove-line-btn").addEventListener("click", () => div.remove());
+    document.getElementById("po-lines").appendChild(div);
+}
+
+document.getElementById("add-line-btn").addEventListener("click", () => addLineRow());
 
     function resetForm() {
         document.getElementById("po-form").reset();
@@ -105,7 +123,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
         document.getElementById("po-lines-readonly").style.display = "block";
         const linesHtml = po.lines.length
             ? `<table><thead><tr><th>SKU</th><th>Qty Ordered</th><th>Qty Received</th><th>Unit Cost</th></tr></thead><tbody>${po.lines.map((l) =>
-                  `<tr><td>${l.product_sku}</td><td>${l.quantity_ordered}</td><td>${l.quantity_received}</td><td>${l.unit_cost}</td></tr>`
+                  `<tr><td>${l.product_sku}</td><td>${l.quantity_ordered}</td><td>${l.quantity_received}</td><td>${formatMoney(l.unit_cost)}</td></tr>`
               ).join("")}</tbody></table>`
             : "<p><em>No line items.</em></p>";
         document.getElementById("po-lines-readonly-content").innerHTML = linesHtml;

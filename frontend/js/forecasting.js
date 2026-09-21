@@ -6,6 +6,18 @@ document.getElementById("logout-btn").addEventListener("click", () => {
 
 let currentProduct = null;
 
+async function loadProductOptions() {
+    const response = await apiFetch("/products/");
+    if (!response || !response.ok) return;
+    const data = await response.json();
+    const products = data.results ?? data;
+
+    const select = document.getElementById("product-id-input");
+    select.innerHTML = `<option value="">Select product...</option>` +
+        products.map((p) => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join("");
+}
+loadProductOptions();
+
 document.getElementById("load-product-btn").addEventListener("click", async () => {
     const productId = document.getElementById("product-id-input").value;
     if (!productId) return;
@@ -49,7 +61,7 @@ async function loadForecastAndComparison(productId) {
             forecastNote.textContent = data.error;
         } else {
             forecastSection.style.display = "block";
-            forecastNote.textContent = `Model used: ${data.model_used} | Predicted units over 30 days: ${data.predicted_units} | Projected revenue: ${data.projected_revenue}`;
+            forecastNote.textContent = `Model used: ${data.model_used} | Predicted units over 30 days: ${data.predicted_units} | Projected revenue: ${formatMoney(data.projected_revenue)}`;
             data.daily_breakdown.forEach((row) => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `<td>${row.date}</td><td>${row.predicted_quantity}</td>`;
