@@ -1,0 +1,16 @@
+[Unit]
+Description=NJSmartStock Daphne (ASGI API + WebSockets)
+After=network.target postgresql.service redis-server.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+User=njsmartstock
+Group=njsmartstock
+WorkingDirectory=/opt/njsmartstock
+Environment=DJANGO_SETTINGS_MODULE=stocksense.settings.prod
+ExecStart=/opt/njsmartstock/venv/bin/daphne -b 127.0.0.1 -p 8000 stocksense.asgi:application
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

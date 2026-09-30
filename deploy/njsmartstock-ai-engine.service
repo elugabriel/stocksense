@@ -1,0 +1,15 @@
+[Unit]
+Description=NJSmartStock AI engine (FastAPI)
+After=network.target
+
+[Service]
+User=njsmartstock
+Group=njsmartstock
+WorkingDirectory=/opt/njsmartstock/ai-engine
+Environment=CORS_ALLOWED_ORIGINS=https://njsmartstock.co.uk,https://www.njsmartstock.co.uk
+ExecStart=/opt/njsmartstock/ai-engine/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8001
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
