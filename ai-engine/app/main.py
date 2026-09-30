@@ -14,13 +14,13 @@ from scipy.optimize import linprog
 
 app = FastAPI(title="NJSmartStock AI Engine")
 
+import os
 from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI(title="NJSmartStock AI Engine")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:3000", "http://localhost:3000"],
+    allow_origins=[o.strip() for o in os.environ.get(
+        "CORS_ALLOWED_ORIGINS", "http://127.0.0.1:3000,http://localhost:3000").split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

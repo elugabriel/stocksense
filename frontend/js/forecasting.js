@@ -94,7 +94,7 @@ async function loadModelComparison(productId) {
     const history = Object.entries(historyByDate).map(([date, quantity]) => ({ date, quantity }));
 
     try {
-        const response = await fetch("http://127.0.0.1:8001/select-best-model", {
+        const response = await fetch(`${AI_BASE}/select-best-model`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ product_sku: currentProduct.sku, history, test_size: 3 }),
@@ -165,7 +165,7 @@ document.getElementById("get-recommendation-btn").addEventListener("click", asyn
     };
 
     try {
-        const aiResponse = await fetch("http://127.0.0.1:8001/recommend-reorder", {
+        const aiResponse = await fetch(`${AI_BASE}/recommend-reorder`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),

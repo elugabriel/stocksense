@@ -28,3 +28,5 @@ mobile/**/ios/Pods/
 mobile/**/ios/.symlinks/
 mobile/**/web/
 !mobile/**/web/index.html
+# Production
+staticfiles/

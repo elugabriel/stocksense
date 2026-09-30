@@ -126,7 +126,7 @@ document.getElementById("logout-btn").addEventListener("click", () => {
         resultEl.innerHTML = "<p><em>Optimizing...</em></p>";
     
         try {
-            const response = await fetch("http://127.0.0.1:8001/optimize-order-quantities", {
+            const response = await fetch(`${AI_BASE}/optimize-order-quantities`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ products, budget, storage_capacity: storage }),

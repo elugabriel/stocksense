@@ -1,4 +1,9 @@
-const API_BASE = "http://127.0.0.1:8000/api/v1";
+// Local dev talks to the dev servers directly; in production the frontend is served from the
+// same origin as the API (Nginx proxies /api/ to Django and /ai/ to the AI engine).
+// Set window.NJ_API_BASE / window.NJ_AI_BASE before this script to override.
+const IS_LOCAL_DEV = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const API_BASE = window.NJ_API_BASE || (IS_LOCAL_DEV ? "http://127.0.0.1:8000/api/v1" : `${window.location.origin}/api/v1`);
+const AI_BASE = window.NJ_AI_BASE || (IS_LOCAL_DEV ? "http://127.0.0.1:8001" : `${window.location.origin}/ai`);
 
 async function apiFetch(endpoint, options = {}) {
     const accessToken = localStorage.getItem("access_token");

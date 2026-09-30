@@ -234,7 +234,7 @@ document.getElementById("run-clustering-btn").addEventListener("click", async ()
     }
 
     try {
-        const clusterRes = await fetch("http://127.0.0.1:8001/vendor-clusters", {
+        const clusterRes = await fetch(`${AI_BASE}/vendor-clusters`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ vendors: vendorMetrics, n_clusters: 3 }),
